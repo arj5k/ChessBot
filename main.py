@@ -20,3 +20,14 @@ while True:
             if event.key == pygame.K_SPACE:
                 print("hi")
 
+    # Do logical updates here.
+    screen.blit(background_image, (0, 0))
+
+    screen.fill('pink')  # Fill the display with a solid color
+    screen.blit(background_image, (0, 0))
+
+    # Render the graphics here.
+
+
+    pygame.display.flip()  # Refresh on-screen display
+    clock.tick(60)
