@@ -8,7 +8,7 @@ clock = pygame.time.Clock()
 
 background_image = pygame.image.load("ChessBoard.png")
 background_image = pygame.transform.scale(background_image, (650, 650))
-my_color = (48,46,43)
+background_color = (48,46,43)
 
 
 while True:
@@ -22,7 +22,7 @@ while True:
                 print("hi")
 
     # Do logical updates here.
-    screen.fill(my_color)  # Fill the display with a solid color
+    screen.fill(background_color)  # Fill the display with a solid color
     screen.blit(background_image, (20, 20))
 
     # Render the graphics here.
