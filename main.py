@@ -2,11 +2,14 @@ import pygame
 
 pygame.init()
 
-screen = pygame.display.set_mode((1280,720))
+screen = pygame.display.set_mode((690,690))
 
 clock = pygame.time.Clock()
 
-my_rect = pygame.Rect((0, 0, 100, 100))
+background_image = pygame.image.load("ChessBoard.png")
+background_image = pygame.transform.scale(background_image, (650, 650))
+background_color = (48,46,43)
+
 
 NAMES = {
     1:"pawn",
@@ -61,15 +64,14 @@ while True:
             raise SystemExit
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                my_rect.x = 0
+                print("hi")
 
     # Do logical updates here.
-    my_rect.x += 4
-
-    screen.fill('pink')  # Fill the display with a solid color
+    screen.fill(background_color)  # Fill the display with a solid color
+    screen.blit(background_image, (20, 20))
 
     # Render the graphics here.
-    pygame.draw.rect(screen, (0, 255, 0), my_rect)
+
 
     pygame.display.flip()  # Refresh on-screen display
-    clock.tick(60)         # wait until next frame (at 60 FPS)
+    clock.tick(60)
