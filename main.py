@@ -11,6 +11,16 @@ background_image = pygame.transform.scale(background_image, (650, 650))
 background_color = (48,46,43)
 
 
+WHITE_TIMELEFT = 600000
+BLACK_TIMELEFT = 600000
+
+PLAYER = {
+    1:"WHITE",
+    2:"BLACK"
+}
+
+current_player = 1
+
 NAMES = {
     1:"pawn",
     2:"night", #should be knight - edited so that the name starts with 'n'
@@ -79,6 +89,68 @@ chessboard[0][4] = Piece(6, "black")
 chessboard[7][4] = Piece(6, "white")
 
 
+def draw_timer(screen, white_time, black_time):
+    """
+    Draw timers for both players with tenths of a second.
+    white_time and black_time should be in milliseconds
+    """
+    # Font setup
+    pygame.font.init()
+    font = pygame.font.SysFont('Arial', 24)
+
+    # Timer box dimensions
+    timer_width = 100
+    timer_height = 40
+    border_width = 2
+
+    # Calculate positions
+    board_right_edge = 50 + 650  # 50px initial offset + 650px board width
+
+    # Black timer at top, aligned with board right edge
+    black_x = board_right_edge - timer_width
+    black_y = 5
+
+    # White timer at bottom, aligned with board right edge
+    white_x = board_right_edge - timer_width
+    white_y = 705
+
+    # Draw timer backgrounds with borders
+    # Black timer background
+    pygame.draw.rect(screen, (0, 0, 0), (black_x - border_width, black_y - border_width,
+                                         timer_width + 2 * border_width, timer_height + 2 * border_width))
+    pygame.draw.rect(screen, (255, 255, 255), (black_x, black_y, timer_width, timer_height))
+
+    # White timer background
+    pygame.draw.rect(screen, (0, 0, 0), (white_x - border_width, white_y - border_width,
+                                         timer_width + 2 * border_width, timer_height + 2 * border_width))
+    pygame.draw.rect(screen, (255, 255, 255), (white_x, white_y, timer_width, timer_height))
+
+    # Convert milliseconds to minutes, seconds, and tenths
+    def format_time(milliseconds):
+        total_seconds = milliseconds / 1000
+        minutes = int(total_seconds // 60)
+        seconds = int(total_seconds % 60)
+        tenths = int((total_seconds * 10) % 10)  # Changed to tenths instead of hundredths
+        return f"{minutes:02d}:{seconds:02d}.{tenths}"  # Only one digit for tenths
+
+    # Render time text
+    black_text = font.render(format_time(black_time), True, (0, 0, 0))
+    white_text = font.render(format_time(white_time), True, (0, 0, 0))
+
+    # Calculate text position to center it in the timer box
+    def center_text(text, box_x, box_y, box_width, box_height):
+        text_x = box_x + (box_width - text.get_width()) // 2
+        text_y = box_y + (box_height - text.get_height()) // 2
+        return text_x, text_y
+
+    # Position and draw the text
+    black_text_pos = center_text(black_text, black_x, black_y, timer_width, timer_height)
+    white_text_pos = center_text(white_text, white_x, white_y, timer_width, timer_height)
+
+    screen.blit(black_text, black_text_pos)
+    screen.blit(white_text, white_text_pos)
+
+
 
 while True:
     # Process player inputs.
@@ -94,7 +166,13 @@ while True:
     screen.fill(background_color)  # Fill the display with a solid color
     screen.blit(background_image, (50, 50))
 
-    # Render the graphics here.
+    if current_player == 1:  # White's turn
+        WHITE_TIMELEFT -= clock.get_time()
+    else:  # Black's turn
+        BLACK_TIMELEFT -= clock.get_time()
+
+    draw_timer(screen, WHITE_TIMELEFT, BLACK_TIMELEFT)
+
     for i in range(WIDTH):
         for j in range(WIDTH):
             if chessboard[i][j]:
