@@ -30,9 +30,9 @@ class Piece:
         self.color = color
         self.value = VALUES[name]
 WIDTH = 8
-chessboard = [["" for x in range(WIDTH)] for y in range(WIDTH)]
+chessboard = [[0 for x in range(WIDTH)] for y in range(WIDTH)]
 
-for z in range(0,WIDTH):
+for z in range(WIDTH):
     chessboard[1][z] = Piece(1, "black")
     chessboard[6][z] = Piece(1,"white")
 chessboard[0][0] = Piece(4, "black")
