@@ -6,7 +6,7 @@ screen = pygame.display.set_mode((750,750))
 
 clock = pygame.time.Clock()
 
-background_image = pygame.image.load("ChessBoard.png")
+background_image = pygame.image.load("200.png")
 background_image = pygame.transform.scale(background_image, (650, 650))
 background_color = (48,46,43)
 
