@@ -91,26 +91,28 @@ chessboard[7][4] = Piece(6, "white")
 
 def draw_timer(screen, white_time, black_time):
     """
-    Draw timers for both players.
+    Draw timers for both players with tenths of a second.
     white_time and black_time should be in milliseconds
     """
     # Font setup
     pygame.font.init()
-    font = pygame.font.SysFont('Arial', 32)
+    font = pygame.font.SysFont('Arial', 24)
 
     # Timer box dimensions
-    timer_width = 120
-    timer_height = 60
+    timer_width = 100
+    timer_height = 40
     border_width = 2
 
-    # Calculate positions (assuming 750x750 screen)
-    # Black timer at top right
-    black_x = 750 - timer_width - 20  # 20px padding from right edge
-    black_y = 20  # 20px padding from top
+    # Calculate positions
+    board_right_edge = 50 + 650  # 50px initial offset + 650px board width
 
-    # White timer at bottom right
-    white_x = 750 - timer_width - 20
-    white_y = 750 - timer_height - 20
+    # Black timer at top, aligned with board right edge
+    black_x = board_right_edge - timer_width
+    black_y = 5
+
+    # White timer at bottom, aligned with board right edge
+    white_x = board_right_edge - timer_width
+    white_y = 705
 
     # Draw timer backgrounds with borders
     # Black timer background
@@ -123,12 +125,13 @@ def draw_timer(screen, white_time, black_time):
                                          timer_width + 2 * border_width, timer_height + 2 * border_width))
     pygame.draw.rect(screen, (255, 255, 255), (white_x, white_y, timer_width, timer_height))
 
-    # Convert milliseconds to minutes and seconds
+    # Convert milliseconds to minutes, seconds, and tenths
     def format_time(milliseconds):
-        total_seconds = milliseconds // 1000
-        minutes = total_seconds // 60
-        seconds = total_seconds % 60
-        return f"{minutes:02d}:{seconds:02d}"
+        total_seconds = milliseconds / 1000
+        minutes = int(total_seconds // 60)
+        seconds = int(total_seconds % 60)
+        tenths = int((total_seconds * 10) % 10)  # Changed to tenths instead of hundredths
+        return f"{minutes:02d}:{seconds:02d}.{tenths}"  # Only one digit for tenths
 
     # Render time text
     black_text = font.render(format_time(black_time), True, (0, 0, 0))
