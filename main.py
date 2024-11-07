@@ -168,8 +168,12 @@ while True:
 
     if current_player == 1:  # White's turn
         WHITE_TIMELEFT -= clock.get_time()
+        if WHITE_TIMELEFT < 0:
+            WHITE_TIMELEFT = 0
     else:  # Black's turn
         BLACK_TIMELEFT -= clock.get_time()
+        if BLACK_TIMELEFT < 0:
+            BLACK_TIMELEFT = 0
 
     draw_timer(screen, WHITE_TIMELEFT, BLACK_TIMELEFT)
 
