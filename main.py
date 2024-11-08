@@ -247,7 +247,7 @@ while True:
     screen.blit(background_image, (50, 50))
 
     # Highlight selected square if a piece is selected
-    if selected_piece and not dragging:
+    if selected_piece:
         pygame.draw.rect(screen, (255, 255, 197),
                          pygame.Rect(50 + selected_j * square_width,
                                      50 + selected_i * square_width,
