@@ -211,6 +211,7 @@ while True:
                         selected_piece = None
                         selected_i = None
                         selected_j = None
+                        current_player = 1 if current_player == 2 else 2
 
         elif event.type == pygame.MOUSEMOTION:
             if selected_piece and not dragging:
@@ -239,6 +240,7 @@ while True:
                 selected_i = None
                 selected_j = None
                 dragging = False
+                current_player = 1 if current_player == 2 else 2
 
             initial_click_pos = None
 
