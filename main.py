@@ -1,26 +1,35 @@
-
-#Mouse input added.  Can now click and drag pieces anywhere on the board.
 import pygame
 
 pygame.init()
 
-screen = pygame.display.set_mode((750,750))
-
+screen = pygame.display.set_mode((750, 750))
 clock = pygame.time.Clock()
 
 background_image = pygame.image.load("ChessBoard.png")
 background_image = pygame.transform.scale(background_image, (640, 640))
-background_color = (48,46,43)
+background_color = (48, 46, 43)
 square_width = background_image.get_width() / 8
+
+# Pre-load all piece images
+PIECE_IMAGES = {}
+
+
+def load_piece_image(color, name):
+    key = f"{color[0]}{name[0]}.png"
+    if key not in PIECE_IMAGES:
+        img = pygame.image.load(key)
+        PIECE_IMAGES[key] = pygame.transform.scale(img, (
+            background_image.get_width() // 8, background_image.get_height() // 8))
+    return PIECE_IMAGES[key]
 
 
 NAMES = {
-    1:"pawn",
-    2:"night", #should be knight - edited so that the name starts with 'n'
-    3:"bishop",
-    4:"rook",
-    5:"queen",
-    6:"king"
+    1: "pawn",
+    2: "night",  # should be knight - edited so that the name starts with 'n'
+    3: "bishop",
+    4: "rook",
+    5: "queen",
+    6: "king"
 }
 VALUES = {
     1: 1,
@@ -29,26 +38,31 @@ VALUES = {
     4: 5,
     5: 9,
     6: 100000
-    }
+}
+
+
 class Piece:
     def __init__(self, number, color):
         self.number = number
         self.name = NAMES[number]
         self.color = color
         self.value = VALUES[number]
+        # Pre-load the piece's image
+        self.image = load_piece_image(color, self.name)
+
     def get_name(self):
         return self.name
+
     def get_color(self):
         return self.color
+
     def get_number(self):
         return self.number
-WIDTH = 8
-chessboard = [[None for x in range(WIDTH)] for y in range(WIDTH)]
 
-for z in range(WIDTH):
-    chessboard[1][z] = Piece(1, "black")
-    chessboard[6][z] = Piece(1,"white")
-# Set up chessboard (8x8 grid)
+    def get_image(self):
+        return self.image
+
+
 WIDTH = 8
 chessboard = [[None for x in range(WIDTH)] for y in range(WIDTH)]
 
@@ -69,7 +83,6 @@ chessboard[7][1] = Piece(2, "white")
 chessboard[0][6] = Piece(2, "black")
 chessboard[7][6] = Piece(2, "white")
 
-
 # Place bishops
 chessboard[0][2] = Piece(3, "black")
 chessboard[7][2] = Piece(3, "white")
@@ -84,10 +97,21 @@ chessboard[7][3] = Piece(5, "white")
 chessboard[0][4] = Piece(6, "black")
 chessboard[7][4] = Piece(6, "white")
 
-
-i_index = None
-j_index = None
+# Variables for piece selection and movement
+selected_i = None
+selected_j = None
 selected_piece = None
+dragging = False
+initial_click_pos = None
+
+
+def get_board_position(mouse_pos):
+    """Convert mouse position to board indices"""
+    if 50 <= mouse_pos[0] <= 700 and 50 <= mouse_pos[1] <= 700:
+        return (int((mouse_pos[1] - 50) // square_width),
+                int((mouse_pos[0] - 50) // square_width))
+    return None
+
 
 while True:
     # Process player inputs.
@@ -95,61 +119,86 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             raise SystemExit
+
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            if(50<=pygame.mouse.get_pos()[0]<=700 and 50<=pygame.mouse.get_pos()[1]<=700):
-                j_index = int((pygame.mouse.get_pos()[0] - 50)//square_width)
-                i_index = int((pygame.mouse.get_pos()[1] - 50)//square_width)
-                if(chessboard[i_index][j_index]):
-                    selected_piece = Piece(chessboard[i_index][j_index].get_number(), chessboard[i_index][j_index].get_color())
-                    chessboard[i_index][j_index] = None
-                print(i_index, "  ", j_index)
-        elif event.type == pygame.MOUSEBUTTONUP:
-            if(selected_piece):
-                new_j = int((pygame.mouse.get_pos()[0] - 50)//square_width)
-                new_i = int((pygame.mouse.get_pos()[1] - 50)//square_width)
-                if (50 <= pygame.mouse.get_pos()[0] <= 700 and 50 <= pygame.mouse.get_pos()[1] <= 700):
-                    chessboard[new_i][new_j] = Piece(selected_piece.get_number(), selected_piece.get_color())
+            initial_click_pos = pygame.mouse.get_pos()
+            board_pos = get_board_position(initial_click_pos)
+
+            if board_pos:
+                i, j = board_pos
+                if selected_piece is None:
+                    # First click - select piece
+                    if chessboard[i][j]:
+                        selected_piece = chessboard[i][j]
+                        selected_i = i
+                        selected_j = j
                 else:
-                    chessboard[i_index][j_index] = Piece(selected_piece.get_number(), selected_piece.get_color())
-            selected_piece = None
-            i_index = None
-            j_index = None
+                    # Second click - move piece if it's not a drag operation
+                    if not dragging:
+                        if (i != selected_i or j != selected_j):
+                            # Move the piece
+                            chessboard[i][j] = selected_piece
+                            chessboard[selected_i][selected_j] = None
+                        selected_piece = None
+                        selected_i = None
+                        selected_j = None
+
+        elif event.type == pygame.MOUSEMOTION:
+            if selected_piece and not dragging:
+                # Check if mouse has moved enough to start dragging
+                current_pos = pygame.mouse.get_pos()
+                if initial_click_pos:
+                    dx = current_pos[0] - initial_click_pos[0]
+                    dy = current_pos[1] - initial_click_pos[1]
+                    # If mouse has moved more than 5 pixels, start dragging
+                    if (dx * dx + dy * dy) > 25:  # 5 pixels squared
+                        dragging = True
+                        chessboard[selected_i][selected_j] = None
+
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if dragging:
+                # Handle drag and drop movement
+                board_pos = get_board_position(pygame.mouse.get_pos())
+                if board_pos:
+                    new_i, new_j = board_pos
+                    chessboard[new_i][new_j] = selected_piece
+                else:
+                    # If dropped outside the board, return piece to original position
+                    chessboard[selected_i][selected_j] = selected_piece
+
+                selected_piece = None
+                selected_i = None
+                selected_j = None
+                dragging = False
+
+            initial_click_pos = None
 
     # Do logical updates here.
-    screen.fill(background_color)  # Fill the display with a solid color
+    screen.fill(background_color)
     screen.blit(background_image, (50, 50))
-    if i_index != None and j_index != None and selected_piece:
+
+    # Highlight selected square if a piece is selected
+    if selected_piece and not dragging:
         pygame.draw.rect(screen, (255, 255, 197),
-                         pygame.Rect(50 + j_index * square_width, 50 + i_index * square_width, square_width,square_width))
+                         pygame.Rect(50 + selected_j * square_width,
+                                     50 + selected_i * square_width,
+                                     square_width, square_width))
 
     # Render the graphics here.
     for i in range(WIDTH):
         for j in range(WIDTH):
             if chessboard[i][j]:
                 piece = chessboard[i][j]
-                piece_color = piece.get_color()
-                piece_name = piece.get_name()
+                x_val = 50 + j * square_width
+                y_val = 50 + i * square_width
+                screen.blit(piece.get_image(), (x_val, y_val))
 
-                # Determine the image based on piece color and name
-                piece_key = f"{piece_color[0]}{piece_name[0]}.png"  # e.g., 'wp.png'
-                img = pygame.image.load(piece_key)
-                img = pygame.transform.scale(img, (background_image.get_width() //8 , background_image.get_height()//8))
+    # Draw dragged piece only if actually dragging
+    if dragging and selected_piece:
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        screen.blit(selected_piece.get_image(),
+                    (mouse_x - background_image.get_width() // 16,
+                     mouse_y - background_image.get_width() // 16))
 
-                # Calculate position on the screen
-                x_val = 50 + j * (background_image.get_width() // WIDTH)
-                y_val = 50 + i * (background_image.get_height() // WIDTH)
-
-                # Draw the piece image on the board
-                screen.blit(img, (x_val, y_val))
-    if(selected_piece):
-        piece_color = selected_piece.get_color()
-        piece_name = selected_piece.get_name()
-
-        # Determine the image based on piece color and name
-        piece_key = f"{piece_color[0]}{piece_name[0]}.png"  # e.g., 'wp.png'
-        img = pygame.image.load(piece_key)
-        img = pygame.transform.scale(img, (background_image.get_width() // 8, background_image.get_height() // 8))
-        screen.blit(img, (pygame.mouse.get_pos()[0] - background_image.get_width() // 16, pygame.mouse.get_pos()[1] - background_image.get_width() // 16))
-
-    pygame.display.flip()  # Refresh on-screen display
+    pygame.display.flip()
     clock.tick(60)
