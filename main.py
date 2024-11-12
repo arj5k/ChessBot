@@ -2,11 +2,11 @@ import pygame
 
 pygame.init()
 
-screen = pygame.display.set_mode((750, 750))
+screen = pygame.display.set_mode((740, 740))
 clock = pygame.time.Clock()
 
 background_image = pygame.image.load("ChessBoard.png")
-background_image = pygame.transform.scale(background_image, (650, 650))
+background_image = pygame.transform.scale(background_image, (640, 640))
 background_color = (48, 46, 43)
 square_width = background_image.get_width() / 8
 
