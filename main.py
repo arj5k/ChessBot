@@ -6,13 +6,12 @@ screen = pygame.display.set_mode((750, 750))
 clock = pygame.time.Clock()
 
 background_image = pygame.image.load("ChessBoard.png")
-background_image = pygame.transform.scale(background_image, (640, 640))
+background_image = pygame.transform.scale(background_image, (650, 650))
 background_color = (48, 46, 43)
 square_width = background_image.get_width() / 8
 
 # Pre-load all piece images
 PIECE_IMAGES = {}
-
 
 def load_piece_image(color, name):
     key = f"{color[0]}{name[0]}.png"
@@ -33,76 +32,152 @@ PLAYER = {
 
 current_player = 1
 
-NAMES = {
-    1: "pawn",
-    2: "night",  # should be knight - edited so that the name starts with 'n'
-    3: "bishop",
-    4: "rook",
-    5: "queen",
-    6: "king"
-}
-VALUES = {
-    1: 1,
-    2: 3,
-    3: 3,
-    4: 5,
-    5: 9,
-    6: 100000
-    }
-class Piece:
-    def __init__(self, number, color):
-        self.number = number
-        self.name = NAMES[number]
-        self.color = color
-        self.value = VALUES[number]
-        # Pre-load the piece's image
-        self.image = load_piece_image(color, self.name)
+turn = True
+check = False
+checkmate = False
 
-    def get_name(self):
-        return self.name
+WIDTH = 8
+chessBoard = [[None for x in range(WIDTH)] for y in range(WIDTH)]
+attacked = [[None for x in range(WIDTH)] for y in range(WIDTH)]
+
+class Piece:
+    def __init__(self, position, color):
+        self.position = position
+        self.color = color
+    def get_position(self):
+        return self.position
     def get_color(self):
         return self.color
 
-    def get_number(self):
-        return self.number
-
+class Pawn(Piece):
+    def __init__(self, position, color, double_move, en_passantable):
+        super().__init__(position, color)
+        self.double_move = double_move
+        self.en_passantable = en_passantable
+        self.image = load_piece_image(color, self.get_name())
     def get_image(self):
         return self.image
+    def get_name(self):
+        return "pawn"
+    def can_move_two(self):
+        return self.double_move
+    def can_be_en_passanted(self):
+        return self.en_passantable
+    # def return_legal_moves(self):
 
+class Night(Piece):
+    def __init__(self, position, color):
+        super().__init__(position, color)
+        self.image = load_piece_image(color, self.get_name())
+    def get_image(self):
+        return self.image
+    def get_name(self):
+        return "night"
 
-WIDTH = 8
-chessboard = [[None for x in range(WIDTH)] for y in range(WIDTH)]
+class Bishop(Piece):
+    def __init__(self, position, color):
+        super().__init__(position, color)
+        self.image = load_piece_image(color, self.get_name())
+    def get_image(self):
+        return self.image
+    def get_name(self):
+        return "bishop"
 
-# Place pawns
+class Rook(Piece):
+    def __init__(self, position, color, castle):
+        super().__init__(position, color)
+        self.castle = castle
+        self.image = load_piece_image(color, self.get_name())
+    def get_image(self):
+        return self.image
+    def get_name(self):
+        return "rook"
+    def can_castle(self):
+        return self.castle
+
+class Queen(Piece):
+    def __init__(self, position, color):
+        super().__init__(position, color)
+        self.image = load_piece_image(color, self.get_name())
+    def get_image(self):
+        return self.image
+    def get_name(self):
+        return "queen"
+
+class King(Piece):
+    def __init__(self, position, color, castle, check):
+        super().__init__(position, color)
+        self.castle = castle
+        self.check = check
+        self.image = load_piece_image(color, self.get_name())
+    def get_image(self):
+        return self.image
+    def get_name(self):
+        return "king"
+    def can_castle(self):
+        return self.castle
+    def in_check(self):
+        return self.check
+
+def updateChessPiece(piece, newLocation):
+    chessBoard[piece.get_position()[0]][piece.get_position()[1]] = None
+    chessBoard[newLocation[0]][newLocation[1]] = piece
+    piece.position = newLocation
+
+bPawns = [None] * 8
+wPawns = [None] * 8
 for z in range(WIDTH):
-    chessboard[1][z] = Piece(1, "black")
-    chessboard[6][z] = Piece(1, "white")
+    bPawns[z] = Pawn([1, z], "black", True, False)
+    wPawns[z] = Pawn([6, z], "white", True, False)
 
 # Place rooks
-chessboard[0][0] = Piece(4, "black")
-chessboard[7][0] = Piece(4, "white")
-chessboard[0][7] = Piece(4, "black")
-chessboard[7][7] = Piece(4, "white")
+bRooks = [None] * 2
+wRooks = [None] * 2
+bRooks[0] = Rook([0, 0], "black", True)
+bRooks[1] = Rook([0, 7], "black", True)
+wRooks[0] = Rook([7, 0], "white", True)
+wRooks[1] = Rook([7, 7], "white", True)
 
 # Place knights
-chessboard[0][1] = Piece(2, "black")
-chessboard[7][1] = Piece(2, "white")
-chessboard[0][6] = Piece(2, "black")
-chessboard[7][6] = Piece(2, "white")
+bNights = [None] * 2
+wNights = [None] * 2
+bNights[0] = Night([0, 1], "black")
+bNights[1] = Night([0, 6], "black")
+wNights[0] = Night([7, 1], "white")
+wNights[1] = Night([7, 6], "white")
 
 # Place bishops
-chessboard[0][2] = Piece(3, "black")
-chessboard[7][2] = Piece(3, "white")
-chessboard[0][5] = Piece(3, "black")
-chessboard[7][5] = Piece(3, "white")
+bBishops = [None] * 2
+wBishops = [None] * 2
+bBishops[0] = Bishop([0, 2], "black")
+bBishops[1] = Bishop([0, 5], "black")
+wBishops[0] = Bishop([7, 2], "white")
+wBishops[1] = Bishop([7, 5], "white")
 
 # Place queens
-chessboard[0][3] = Piece(5, "black")
-chessboard[7][3] = Piece(5, "white")
+bQueen = [None] * 1
+wQueen = [None] * 1
+bQueen[0] = Queen([0, 3], "black")
+wQueen[0] = Queen([7, 3], "white")
 
 # Place kings
-chessboard[0][4] = Piece(6, "black")
-chessboard[7][4] = Piece(6, "white")
+bKing = [None] * 1
+wKing = [None] * 1
+bKing[0] = King([0, 4], "black", True, False)
+wKing[0] = King([7, 4], "white", True, False)
+
+for element in bPawns: updateChessPiece(element, element.get_position())
+for element in wPawns: updateChessPiece(element, element.get_position())
+for element in bRooks: updateChessPiece(element, element.get_position())
+for element in wRooks: updateChessPiece(element, element.get_position())
+for element in bNights: updateChessPiece(element, element.get_position())
+for element in wNights: updateChessPiece(element, element.get_position())
+for element in bBishops: updateChessPiece(element, element.get_position())
+for element in wBishops: updateChessPiece(element, element.get_position())
+for element in bQueen: updateChessPiece(element, element.get_position())
+for element in wQueen: updateChessPiece(element, element.get_position())
+for element in bKing: updateChessPiece(element, element.get_position())
+for element in wKing: updateChessPiece(element, element.get_position())
 
 # Variables for piece selection and movement
 selected_i = None
@@ -110,7 +185,6 @@ selected_j = None
 selected_piece = None
 dragging = False
 initial_click_pos = None
-
 
 def get_board_position(mouse_pos):
     """Convert mouse position to board indices"""
@@ -180,8 +254,6 @@ def draw_timer(screen, white_time, black_time):
     screen.blit(black_text, black_text_pos)
     screen.blit(white_text, white_text_pos)
 
-
-
 while True:
     # Process player inputs.
     for event in pygame.event.get():
@@ -197,8 +269,8 @@ while True:
                 i, j = board_pos
                 if selected_piece is None:
                     # First click - select piece
-                    if chessboard[i][j]:
-                        selected_piece = chessboard[i][j]
+                    if chessBoard[i][j]:
+                        selected_piece = chessBoard[i][j]
                         selected_i = i
                         selected_j = j
                 else:
@@ -206,8 +278,8 @@ while True:
                     if not dragging:
                         if (i != selected_i or j != selected_j):
                             # Move the piece
-                            chessboard[i][j] = selected_piece
-                            chessboard[selected_i][selected_j] = None
+                            chessBoard[i][j] = selected_piece
+                            chessBoard[selected_i][selected_j] = None
                         selected_piece = None
                         selected_i = None
                         selected_j = None
@@ -223,7 +295,7 @@ while True:
                     # If mouse has moved more than 5 pixels, start dragging
                     if (dx * dx + dy * dy) > 25:  # 5 pixels squared
                         dragging = True
-                        chessboard[selected_i][selected_j] = None
+                        chessBoard[selected_i][selected_j] = None
 
         elif event.type == pygame.MOUSEBUTTONUP:
             if dragging:
@@ -231,10 +303,10 @@ while True:
                 board_pos = get_board_position(pygame.mouse.get_pos())
                 if board_pos:
                     new_i, new_j = board_pos
-                    chessboard[new_i][new_j] = selected_piece
+                    chessBoard[new_i][new_j] = selected_piece
                 else:
                     # If dropped outside the board, return piece to original position
-                    chessboard[selected_i][selected_j] = selected_piece
+                    chessBoard[selected_i][selected_j] = selected_piece
 
                 selected_piece = None
                 selected_i = None
@@ -269,8 +341,8 @@ while True:
     # Render the graphics here.
     for i in range(WIDTH):
         for j in range(WIDTH):
-            if chessboard[i][j]:
-                piece = chessboard[i][j]
+            if chessBoard[i][j]:
+                piece = chessBoard[i][j]
                 x_val = 50 + j * square_width
                 y_val = 50 + i * square_width
                 screen.blit(piece.get_image(), (x_val, y_val))
