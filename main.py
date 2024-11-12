@@ -325,7 +325,7 @@ while True:
         pygame.draw.rect(screen, (255, 255, 197),
                          pygame.Rect(50 + selected_j * square_width,
                                      50 + selected_i * square_width,
-                                     square_width, square_width))
+                                     square_width+1, square_width+1))
 
     if current_player == 1:  # White's turn
         WHITE_TIMELEFT -= clock.get_time()
