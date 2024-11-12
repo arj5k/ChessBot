@@ -280,11 +280,17 @@ while True:
                             # Move the piece
                             chessBoard[i][j] = selected_piece
                             chessBoard[selected_i][selected_j] = None
+
+                        if i == selected_i and j==selected_j:
+                            selected_piece = None
+                            selected_i = None
+                            selected_j = None
+                            break
+
+                        current_player = 1 if current_player == 2 else 2
                         selected_piece = None
                         selected_i = None
                         selected_j = None
-                        current_player = 1 if current_player == 2 else 2
-
         elif event.type == pygame.MOUSEMOTION:
             if selected_piece and not dragging:
                 # Check if mouse has moved enough to start dragging
