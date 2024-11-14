@@ -270,9 +270,10 @@ while True:
                 if selected_piece is None:
                     # First click - select piece
                     if chessBoard[i][j]:
-                        selected_piece = chessBoard[i][j]
-                        selected_i = i
-                        selected_j = j
+                        if (chessBoard[i][j].get_color() == "white" and current_player == 1) or (chessBoard[i][j].get_color()=="black" and current_player == 2):
+                            selected_piece = chessBoard[i][j]
+                            selected_i = i
+                            selected_j = j
                 else:
                     # Second click - move piece if it's not a drag operation
                     if not dragging:
