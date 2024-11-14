@@ -2,11 +2,11 @@ import pygame
 
 pygame.init()
 
-screen = pygame.display.set_mode((750, 750))
+screen = pygame.display.set_mode((740, 740))
 clock = pygame.time.Clock()
 
 background_image = pygame.image.load("ChessBoard.png")
-background_image = pygame.transform.scale(background_image, (650, 650))
+background_image = pygame.transform.scale(background_image, (640, 640))
 background_color = (48, 46, 43)
 square_width = background_image.get_width() / 8
 
@@ -270,9 +270,10 @@ while True:
                 if selected_piece is None:
                     # First click - select piece
                     if chessBoard[i][j]:
-                        selected_piece = chessBoard[i][j]
-                        selected_i = i
-                        selected_j = j
+                        if (chessBoard[i][j].get_color() == "white" and current_player == 1) or (chessBoard[i][j].get_color()=="black" and current_player == 2):
+                            selected_piece = chessBoard[i][j]
+                            selected_i = i
+                            selected_j = j
                 else:
                     # Second click - move piece if it's not a drag operation
                     if not dragging:
@@ -280,11 +281,17 @@ while True:
                             # Move the piece
                             chessBoard[i][j] = selected_piece
                             chessBoard[selected_i][selected_j] = None
+
+                        if i == selected_i and j==selected_j:
+                            selected_piece = None
+                            selected_i = None
+                            selected_j = None
+                            break
+
+                        current_player = 1 if current_player == 2 else 2
                         selected_piece = None
                         selected_i = None
                         selected_j = None
-                        current_player = 1 if current_player == 2 else 2
-
         elif event.type == pygame.MOUSEMOTION:
             if selected_piece and not dragging:
                 # Check if mouse has moved enough to start dragging
