@@ -1,3 +1,5 @@
+from tempfile import tempdir
+
 import pygame
 
 pygame.init()
@@ -5,7 +7,11 @@ pygame.init()
 screen = pygame.display.set_mode((740, 740))
 clock = pygame.time.Clock()
 
-background_image = pygame.image.load("ChessBoard.png")
+side = False
+if side:
+    background_image = pygame.image.load("ChessBoard.png")
+else:
+    background_image = pygame.image.load("ReverseBoard.png")
 background_image = pygame.transform.scale(background_image, (640, 640))
 background_color = (48, 46, 43)
 square_width = background_image.get_width() / 8
@@ -48,6 +54,8 @@ class Piece:
         return self.position
     def get_color(self):
         return self.color
+    def return_legal_moves(self):
+        return [[2,1],[6,3],[4,5],[0,7]]
 
 class Pawn(Piece):
     def __init__(self, position, color, double_move, en_passantable):
@@ -118,7 +126,6 @@ class King(Piece):
         return self.castle
     def in_check(self):
         return self.check
-
 def updateChessPiece(piece, newLocation):
     chessBoard[piece.get_position()[0]][piece.get_position()[1]] = None
     chessBoard[newLocation[0]][newLocation[1]] = piece
@@ -189,8 +196,12 @@ initial_click_pos = None
 def get_board_position(mouse_pos):
     """Convert mouse position to board indices"""
     if 50 <= mouse_pos[0] <= 700 and 50 <= mouse_pos[1] <= 700:
-        return (int((mouse_pos[1] - 50) // square_width),
+        if side:
+            return (int((mouse_pos[1] - 50) // square_width),
                 int((mouse_pos[0] - 50) // square_width))
+        else:
+            return ((int(7 - (mouse_pos[1] - 50) // square_width)),
+            (int(7-((mouse_pos[0] - 50) // square_width))))
     return None
 
 def draw_timer(screen, white_time, black_time):
@@ -267,6 +278,7 @@ while True:
 
             if board_pos:
                 i, j = board_pos
+                print(i,"  ",j)
                 if selected_piece is None:
                     # First click - select piece
                     if chessBoard[i][j]:
@@ -323,16 +335,23 @@ while True:
 
             initial_click_pos = None
 
-    # Do logical updates here.
+    # Do logical updates here
     screen.fill(background_color)
     screen.blit(background_image, (50, 50))
 
     # Highlight selected square if a piece is selected
     if selected_piece:
-        pygame.draw.rect(screen, (255, 255, 197),
-                         pygame.Rect(49 + selected_j * square_width,
+        if side:
+            pygame.draw.rect(screen, (255, 255, 197),
+                         pygame.Rect(50 + selected_j * square_width,
                                      50 + selected_i * square_width,
                                      square_width+1, square_width+1))
+        else:
+            pygame.draw.rect(screen, (255, 255, 197),
+                         pygame.Rect(50 + (7-selected_j) * square_width,
+                                     50 + (7-selected_i) * square_width,
+                                     square_width+1, square_width+1))
+
 
     if current_player == 1:  # White's turn
         WHITE_TIMELEFT -= clock.get_time()
@@ -352,7 +371,10 @@ while True:
                 piece = chessBoard[i][j]
                 x_val = 50 + j * square_width
                 y_val = 50 + i * square_width
-                screen.blit(piece.get_image(), (x_val, y_val))
+                if(side):
+                    screen.blit(piece.get_image(), (x_val, y_val))
+                else:
+                    screen.blit(piece.get_image(), (screen.get_width()-x_val-square_width, screen.get_width()-y_val-square_width))
 
     # Draw dragged piece only if actually dragging
     if dragging and selected_piece:
@@ -360,6 +382,20 @@ while True:
         screen.blit(selected_piece.get_image(),
                     (mouse_x - background_image.get_width() // 16,
                      mouse_y - background_image.get_width() // 16))
+    if selected_piece:
+        for square in selected_piece.return_legal_moves():
+            circle_surface = pygame.Surface((square_width,square_width), pygame.SRCALPHA)
+            circle_surface.set_alpha(85)
+            if not side:
+                temp = square[0]
+                square[0] = square[1]
+                square[1] = temp
+            if not chessBoard[square[0]][square[1]]:
+                pygame.draw.circle(circle_surface, (75, 75, 75), (square_width / 2, square_width / 2), 13)
+            else:
+                pygame.draw.circle(circle_surface, (75, 75, 75), (square_width / 2, square_width / 2), square_width/2, 6)
+            screen.blit(circle_surface, (50+square[1]*square_width,50+square[0]*square_width))
+
 
     pygame.display.flip()
     clock.tick(60)
