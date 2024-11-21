@@ -35,6 +35,7 @@ current_player = 1
 turn = True
 check = False
 checkmate = False
+#add an additional element to the grid that says if a piece attacks it, also to the legal moves or somewhere else that only allows a move to be legal if not in check, also make everything else cooperate, especially update the board array
 
 WIDTH = 8
 chessBoard = [[None for x in range(WIDTH)] for y in range(WIDTH)]
@@ -63,7 +64,85 @@ class Pawn(Piece):
         return self.double_move
     def can_be_en_passanted(self):
         return self.en_passantable
-    # def return_legal_moves(self):
+    def return_legal_moves(self):
+        #if piece in way, puts in check, or out of bounds + (also have to add in the check check after determign everything else possible function) - add in this square as a possibility to be returned - THE WAY YOU WILL CODE THE CheckChecked function does not iterate through every piece, so you will have to add "in_check" boolean at the start of each return_legal_moves function everyttime - add in a seperate part for getting out of check legal moves thing probably, this may mean you have to implement aditional variables (like what is the piece giving check, is it a double check)
+        legalMoves = []
+        newPosition = self.get_position()
+        if (self.double_move):
+            if (self.get_color() == "black"):
+                if (not (chessBoard[newPosition[0]][newPosition[1]+1] or chessBoard[newPosition[0]][newPosition[1]+2])):
+                    newPosition1 = self.get_position()
+                    newPosition1[1] += 2
+                    if (not checkChecked(self.get_position(), newPosition1, False, "black")):
+                        legalMoves.append(newPosition1) #add this to every other part
+            else:
+                if (not (chessBoard[newPosition[0]][newPosition[1] - 1] or chessBoard[newPosition[0]][newPosition[1] - 2])):
+                    newPosition1 = self.get_position()
+                    newPosition1[1] -= 2
+                    if (not checkChecked(self.get_position(), newPosition1, False, "white")):
+                        legalMoves.append(newPosition1)  # add this to every other part
+        else:
+            if (self.get_color() == "black"):
+                if (not (chessBoard[newPosition[0]][newPosition[1]+1])):
+                    newPosition1 = self.get_position()
+                    newPosition1[1] += 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, "black")):
+                        legalMoves.append(newPosition1)
+                if (newPosition[0] != 7 and (chessBoard[newPosition[0] + 1][newPosition[1] + 1])):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] += 1
+                    newPosition1[1] += 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, "black")):
+                        legalMoves.append(newPosition1)
+                if (newPosition[0] != 0 and (chessBoard[newPosition[0] - 1][newPosition[1] + 1])):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] -= 1
+                    newPosition1[1] += 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, "black")):
+                        legalMoves.append(newPosition1)
+                if (newPosition[0] != 7 and (chessBoard[newPosition[0] + 1][newPosition[1]]) and chessBoard[newPosition[0] + 1][newPosition[1]].get_name() == "pawn" and chessBoard[newPosition[0] + 1][newPosition[1]].can_be_en_passanted() and chessBoard[newPosition[0] + 1][newPosition[1]].get_color() == "white"):
+                    newPosition1 = self.get_position() #have to add in an addition check for en passant if that will put you in check
+                    newPosition1[0] += 1
+                    newPosition1[1] += 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, "black")):
+                        legalMoves.append(newPosition1)
+                if (newPosition[0] != 0 and (chessBoard[newPosition[0] - 1][newPosition[1]]) and chessBoard[newPosition[0] - 1][newPosition[1]].get_name() == "pawn" and chessBoard[newPosition[0] - 1][newPosition[1]].can_be_en_passanted() and chessBoard[newPosition[0] - 1][newPosition[1]].get_color() == "white"):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] -= 1
+                    newPosition1[1] += 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, "black")):
+                        legalMoves.append(newPosition1)
+            else:
+                if (not (chessBoard[newPosition[0]][newPosition[1] - 1])):
+                    newPosition1 = self.get_position()
+                    newPosition1[1] -= 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, "white")):
+                        legalMoves.append(newPosition1)
+                if (newPosition[0] != 7 and (chessBoard[newPosition[0] + 1][newPosition[1] - 1])):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] += 1
+                    newPosition1[1] -= 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, "white")):
+                        legalMoves.append(newPosition1)
+                if (newPosition[0] != 0 and (chessBoard[newPosition[0] - 1][newPosition[1] - 1])):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] -= 1
+                    newPosition1[1] -= 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, "white")):
+                        legalMoves.append(newPosition1)
+                if (newPosition[0] != 7 and (chessBoard[newPosition[0] + 1][newPosition[1]]) and chessBoard[newPosition[0] + 1][newPosition[1]].get_name() == "pawn" and chessBoard[newPosition[0] + 1][newPosition[1]].can_be_en_passanted() and chessBoard[newPosition[0] + 1][newPosition[1]].get_color() == "black"):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] += 1
+                    newPosition1[1] -= 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, "white")):
+                        legalMoves.append(newPosition1)
+                if (newPosition[0] != 0 and (chessBoard[newPosition[0] - 1][newPosition[1]]) and chessBoard[newPosition[0] - 1][newPosition[1]].get_name() == "pawn" and chessBoard[newPosition[0] - 1][newPosition[1]].can_be_en_passanted() and chessBoard[newPosition[0] - 1][newPosition[1]].get_color() == "black"):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] -= 1
+                    newPosition1[1] -= 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, "white")):
+                        legalMoves.append(newPosition1)
+        return legalMoves
 
 class Night(Piece):
     def __init__(self, position, color):
@@ -73,6 +152,120 @@ class Night(Piece):
         return self.image
     def get_name(self):
         return "night"
+    def return_legal_moves(self):
+        legalMoves = []
+        newPosition = self.get_position()
+        vertical = newPosition[1]
+        horizontal = newPosition[0]
+        if (vertical > 1):
+            if (horizontal > 0):
+                if (chessBoard[horizontal - 1][vertical - 2] and not (chessBoard[horizontal - 1][vertical - 2].get_color() == chessBoard[horizontal][vertical].get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] -= 1
+                    newPosition1[1] -= 2
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                elif (not chessBoard[horizontal - 1][vertical - 2]):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] -= 1
+                    newPosition1[1] -= 2
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+            if (horizontal < 7):
+                if (chessBoard[horizontal + 1][vertical - 2] and not (chessBoard[horizontal + 1][vertical - 2].get_color() == chessBoard[horizontal][vertical].get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] += 1
+                    newPosition1[1] -= 2
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                elif (not chessBoard[horizontal + 1][vertical - 2]):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] += 1
+                    newPosition1[1] -= 2
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+        if (vertical < 6):
+            if (horizontal > 0):
+                if (chessBoard[horizontal - 1][vertical + 2] and not (chessBoard[horizontal - 1][vertical + 2].get_color() == chessBoard[horizontal][vertical].get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] -= 1
+                    newPosition1[1] += 2
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                elif (not chessBoard[horizontal - 1][vertical + 2]):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] -= 1
+                    newPosition1[1] += 2
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+            if (horizontal < 7):
+                if (chessBoard[horizontal + 1][vertical + 2] and not (chessBoard[horizontal + 1][vertical + 2].get_color() == chessBoard[horizontal][vertical].get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] += 1
+                    newPosition1[1] += 2
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                elif (not chessBoard[horizontal + 1][vertical + 2]):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] += 1
+                    newPosition1[1] += 2
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+        if (horizontal > 1):
+            if (vertical > 0):
+                if (chessBoard[horizontal - 2][vertical - 1] and not (chessBoard[horizontal - 2][vertical - 1].get_color() == chessBoard[horizontal][vertical].get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] -= 2
+                    newPosition1[1] -= 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                elif (not chessBoard[horizontal - 2][vertical - 1]):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] -= 2
+                    newPosition1[1] -= 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+            if (vertical < 7):
+                if (chessBoard[horizontal - 2][vertical + 1] and not (chessBoard[horizontal - 2][vertical + 1].get_color() == chessBoard[horizontal][vertical].get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] -= 2
+                    newPosition1[1] += 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                elif (not chessBoard[horizontal - 2][vertical + 1]):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] -= 2
+                    newPosition1[1] += 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+        if (horizontal < 6):
+            if (vertical > 0):
+                if (chessBoard[horizontal + 2][vertical - 1] and not (chessBoard[horizontal + 2][vertical - 1].get_color() == chessBoard[horizontal][vertical].get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] += 2
+                    newPosition1[1] -= 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                elif (not chessBoard[horizontal + 2][vertical - 1]):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] += 2
+                    newPosition1[1] -= 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+            if (vertical < 7):
+                if (chessBoard[horizontal + 2][vertical + 1] and not (chessBoard[horizontal + 2][vertical + 1].get_color() == chessBoard[horizontal][vertical].get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] += 2
+                    newPosition1[1] += 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                elif (not chessBoard[horizontal + 2][vertical + 1]):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] += 2
+                    newPosition1[1] += 1
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+        return legalMoves
 
 class Bishop(Piece):
     def __init__(self, position, color):
@@ -82,6 +275,86 @@ class Bishop(Piece):
         return self.image
     def get_name(self):
         return "bishop"
+    def return_legal_moves(self):
+        legalMoves = []
+        newPosition = self.get_position()
+        vertical = newPosition[1] - 1
+        horizontal = newPosition[0] - 1
+        while (vertical > -1 and horizontal > -1):
+            if not (chessBoard[horizontal][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                    legalMoves.append(newPosition1)
+                vertical -= 1
+                horizontal -= 1
+            else:
+                if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal
+                    newPosition1[1] = vertical
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                vertical = -100
+        vertical = newPosition[1] + 1
+        horizontal = newPosition[0] - 1
+        while (vertical < 8 and horizontal > -1):
+            if not (chessBoard[horizontal][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                    legalMoves.append(newPosition1)
+                vertical += 1
+                horizontal -= 1
+            else:
+                if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal
+                    newPosition1[1] = vertical
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                horizontal = -100
+        vertical = newPosition[1] - 1
+        horizontal = newPosition[0] + 1
+        while (vertical > -1 and horizontal < 8):
+            if not (chessBoard[horizontal][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                    legalMoves.append(newPosition1)
+                vertical -= 1
+                horizontal += 1
+            else:
+                if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal
+                    newPosition1[1] = vertical
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                vertical = -100
+        vertical = newPosition[1] + 1
+        horizontal = newPosition[0] + 1
+        while (vertical < 8 and horizontal < 8):
+            if not (chessBoard[horizontal][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                    legalMoves.append(newPosition1)
+                vertical += 1
+                horizontal += 1
+            else:
+                if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal
+                    newPosition1[1] = vertical
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                horizontal = 100
+        return legalMoves
 
 class Rook(Piece):
     def __init__(self, position, color, castle):
@@ -94,6 +367,80 @@ class Rook(Piece):
         return "rook"
     def can_castle(self):
         return self.castle
+    def return_legal_moves(self):
+        legalMoves = []
+        newPosition = self.get_position()
+        vertical = newPosition[1] - 1
+        horizontal = newPosition[0]
+        while (vertical > -1):
+            if not (chessBoard[horizontal][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                    legalMoves.append(newPosition1)
+                vertical -= 1
+            else:
+                if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal
+                    newPosition1[1] = vertical
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                vertical = -100
+        vertical = newPosition[1] + 1
+        while (vertical < 8):
+            if not (chessBoard[horizontal][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                    legalMoves.append(newPosition1)
+                vertical += 1
+            else:
+                if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal
+                    newPosition1[1] = vertical
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                vertical = 100
+        vertical = newPosition[1]
+        horizontal = newPosition[0] - 1
+        while (horizontal > -1):
+            if not (chessBoard[horizontal][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                    legalMoves.append(newPosition1)
+                horizontal -= 1
+            else:
+                if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal
+                    newPosition1[1] = vertical
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                horizontal = -100
+        horizontal = newPosition[0] + 1
+        while (horizontal < 8):
+            if not (chessBoard[horizontal][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                    legalMoves.append(newPosition1)
+                horizontal += 1
+            else:
+                if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal
+                    newPosition1[1] = vertical
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                horizontal = 100
+        return legalMoves
 
 class Queen(Piece):
     def __init__(self, position, color):
@@ -103,6 +450,158 @@ class Queen(Piece):
         return self.image
     def get_name(self):
         return "queen"
+    def return_legal_moves(self):
+        legalMoves = []
+        newPosition = self.get_position()
+        vertical = newPosition[1] - 1
+        horizontal = newPosition[0] - 1
+        while (vertical > -1 and horizontal > -1):
+            if not (chessBoard[horizontal][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                    legalMoves.append(newPosition1)
+                vertical -= 1
+                horizontal -= 1
+            else:
+                if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal
+                    newPosition1[1] = vertical
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                vertical = -100
+        vertical = newPosition[1] + 1
+        horizontal = newPosition[0] - 1
+        while (vertical < 8 and horizontal > -1):
+            if not (chessBoard[horizontal][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                    legalMoves.append(newPosition1)
+                vertical += 1
+                horizontal -= 1
+            else:
+                if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal
+                    newPosition1[1] = vertical
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                horizontal = -100
+        vertical = newPosition[1] - 1
+        horizontal = newPosition[0] + 1
+        while (vertical > -1 and horizontal < 8):
+            if not (chessBoard[horizontal][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                    legalMoves.append(newPosition1)
+                vertical -= 1
+                horizontal += 1
+            else:
+                if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal
+                    newPosition1[1] = vertical
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                vertical = -100
+        vertical = newPosition[1] + 1
+        horizontal = newPosition[0] + 1
+        while (vertical < 8 and horizontal < 8):
+            if not (chessBoard[horizontal][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                    legalMoves.append(newPosition1)
+                vertical += 1
+                horizontal += 1
+            else:
+                if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal
+                    newPosition1[1] = vertical
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                horizontal = 100
+
+        vertical = newPosition[1] - 1
+        horizontal = newPosition[0]
+        while (vertical > -1):
+            if not (chessBoard[horizontal][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                    legalMoves.append(newPosition1)
+                vertical -= 1
+            else:
+                if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal
+                    newPosition1[1] = vertical
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                vertical = -100
+        vertical = newPosition[1] + 1
+        while (vertical < 8):
+            if not (chessBoard[horizontal][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                    legalMoves.append(newPosition1)
+                vertical += 1
+            else:
+                if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal
+                    newPosition1[1] = vertical
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                vertical = 100
+        vertical = newPosition[1]
+        horizontal = newPosition[0] - 1
+        while (horizontal > -1):
+            if not (chessBoard[horizontal][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                    legalMoves.append(newPosition1)
+                horizontal -= 1
+            else:
+                if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal
+                    newPosition1[1] = vertical
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                horizontal = -100
+        horizontal = newPosition[0] + 1
+        while (horizontal < 8):
+            if not (chessBoard[horizontal][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                    legalMoves.append(newPosition1)
+                horizontal += 1
+            else:
+                if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal
+                    newPosition1[1] = vertical
+                    if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
+                        legalMoves.append(newPosition1)
+                horizontal = 100
+        return legalMoves
+
 
 class King(Piece):
     def __init__(self, position, color, castle, check):
@@ -118,6 +617,222 @@ class King(Piece):
         return self.castle
     def in_check(self):
         return self.check
+    def return_legal_moves(self):
+        legalMoves = []
+        newPosition = self.get_position()
+        vertical = newPosition[1]
+        horizontal = newPosition[0]
+        if (vertical > 0):
+            if (horizontal > 0):
+                if (chessBoard[horizontal - 1][vertical - 1] and not (chessBoard[horizontal - 1][vertical - 1].get_color() == chessBoard[horizontal][vertical].get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal - 1
+                    newPosition1[1] = vertical - 1
+                    if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                        legalMoves.append(newPosition1)
+                elif (not chessBoard[horizontal - 1][vertical - 1]):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal - 1
+                    newPosition1[1] = vertical - 1
+                    if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                        legalMoves.append(newPosition1)
+            if (horizontal < 7):
+                if (chessBoard[horizontal + 1][vertical - 1] and not (chessBoard[horizontal + 1][vertical - 1].get_color() == chessBoard[horizontal][vertical].get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal + 1
+                    newPosition1[1] = vertical - 1
+                    if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                        legalMoves.append(newPosition1)
+                elif (not chessBoard[horizontal + 1][vertical - 1]):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal + 1
+                    newPosition1[1] = vertical - 1
+                    if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                        legalMoves.append(newPosition1)
+            if (chessBoard[horizontal][vertical - 1] and not (chessBoard[horizontal][vertical - 1].get_color() == chessBoard[horizontal][vertical].get_color())):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical - 1
+                if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                    legalMoves.append(newPosition1)
+            elif (not chessBoard[horizontal][vertical - 1]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical - 1
+                if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                    legalMoves.append(newPosition1)
+        if (vertical < 7):
+            if (horizontal > 0):
+                if (chessBoard[horizontal - 1][vertical + 1] and not (chessBoard[horizontal - 1][vertical + 1].get_color() == chessBoard[horizontal][vertical].get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal - 1
+                    newPosition1[1] = vertical + 1
+                    if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                        legalMoves.append(newPosition1)
+                elif (not chessBoard[horizontal - 1][vertical + 1]):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal - 1
+                    newPosition1[1] = vertical + 1
+                    if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                        legalMoves.append(newPosition1)
+            if (horizontal < 7):
+                if (chessBoard[horizontal + 1][vertical + 1] and not (chessBoard[horizontal + 1][vertical + 1].get_color() == chessBoard[horizontal][vertical].get_color())):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal + 1
+                    newPosition1[1] = vertical + 1
+                    if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                        legalMoves.append(newPosition1)
+                elif (not chessBoard[horizontal + 1][vertical + 1]):
+                    newPosition1 = self.get_position()
+                    newPosition1[0] = horizontal + 1
+                    newPosition1[1] = vertical + 1
+                    if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                        legalMoves.append(newPosition1)
+            if (chessBoard[horizontal][vertical + 1] and not (chessBoard[horizontal][vertical + 1].get_color() == chessBoard[horizontal][vertical].get_color())):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical + 1
+                if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                    legalMoves.append(newPosition1)
+            elif (not chessBoard[horizontal][vertical + 1]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal
+                newPosition1[1] = vertical + 1
+                if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                    legalMoves.append(newPosition1)
+        if (horizontal > 0):
+            if (chessBoard[horizontal - 1][vertical] and not (chessBoard[horizontal - 1][vertical].get_color() == chessBoard[horizontal][vertical].get_color())):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal - 1
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                    legalMoves.append(newPosition1)
+            elif (not chessBoard[horizontal - 1][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal - 1
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                    legalMoves.append(newPosition1)
+        if (horizontal < 7):
+            if (chessBoard[horizontal + 1][vertical] and not (chessBoard[horizontal + 1][vertical].get_color() == chessBoard[horizontal][vertical].get_color())):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal + 1
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                    legalMoves.append(newPosition1)
+            elif (not chessBoard[horizontal + 1][vertical]):
+                newPosition1 = self.get_position()
+                newPosition1[0] = horizontal + 1
+                newPosition1[1] = vertical
+                if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                    legalMoves.append(newPosition1)
+        return legalMoves
+
+def checkChecked(originalLocation, newLocation, isKing, color):
+    #have to add in thing if it moves in the same direction so still blocks the check
+    #severrely update this to catch further condiitons(en passant?)
+    if (not isKing):
+        if (color == "black"):
+            kRow = bKing[0].get_position()[1]
+            kCol = bKing[0].get_position()[0]
+            if (kRow == originalLocation[1]):
+                if (kCol < originalLocation[0]):
+                    iterator = originalLocation[0] - 1
+                    while (iterator > -1):
+                        if (chessBoard[iterator][kRow] and not (iterator == originalLocation[0])):
+                            if (chessBoard[iterator][kRow].get_name() == "rook" or chessBoard[iterator][kRow].get_name() == "queen") and chessBoard[iterator][kRow].get_color() == "white":
+                                return True
+                            return False
+                        iterator -= 1
+                    return False
+                else:
+                    iterator = originalLocation[0] + 1
+                    while (iterator < 8):
+                        if (chessBoard[iterator][kRow] and not (iterator == originalLocation[0])):
+                            if (chessBoard[iterator][kRow].get_name() == "rook" or chessBoard[iterator][kRow].get_name() == "queen") and chessBoard[iterator][kRow].get_color() == "white":
+                                return True
+                            return False
+                        iterator += 1
+                    return False
+            elif (kCol == originalLocation[0]):
+                if (kRow < originalLocation[1]):
+                    iterator = originalLocation[1] - 1
+                    while (iterator > -1):
+                        if (chessBoard[kCol][iterator] and not (iterator == originalLocation[1])):
+                            if (chessBoard[kCol][iterator].get_name() == "rook" or chessBoard[kCol][iterator].get_name() == "queen") and chessBoard[kCol][iterator].get_color() == "white":
+                                return True
+                            return False
+                        iterator -= 1
+                    return False
+                else:
+                    iterator = originalLocation[1] + 1
+                    while (iterator < 8):
+                        if (chessBoard[kCol][iterator] and not (iterator == originalLocation[1])):
+                            if (chessBoard[kCol][iterator].get_name() == "rook" or chessBoard[kCol][iterator].get_name() == "queen") and chessBoard[kCol][iterator].get_color() == "white":
+                                return True
+                            return False
+                        iterator += 1
+                    return False
+            elif (abs(kRow - originalLocation[1]) == abs(kCol - originalLocation[0])):
+                return False
+            elif (kRow + kCol == originalLocation[1] + originalLocation[0]):
+                return False
+            else:
+                return False
+        else:
+            kRow = wKing[0].get_position()[1]
+            kCol = wKing[0].get_position()[0]
+            if (kRow == originalLocation[1]):
+                if (kCol < originalLocation[0]):
+                    iterator = originalLocation[0] - 1
+                    while (iterator > -1):
+                        if (chessBoard[iterator][kRow] and not (iterator == originalLocation[0])):
+                            if (chessBoard[iterator][kRow].get_name() == "rook" or chessBoard[iterator][
+                                kRow].get_name() == "queen") and chessBoard[iterator][kRow].get_color() == "black":
+                                return True
+                            return False
+                        iterator -= 1
+                    return False
+                else:
+                    iterator = originalLocation[0] + 1
+                    while (iterator < 8):
+                        if (chessBoard[iterator][kRow] and not (iterator == originalLocation[0])):
+                            if (chessBoard[iterator][kRow].get_name() == "rook" or chessBoard[iterator][
+                                kRow].get_name() == "queen") and chessBoard[iterator][kRow].get_color() == "black":
+                                return True
+                            return False
+                        iterator += 1
+                    return False
+            elif (kCol == originalLocation[0]):
+                if (kRow < originalLocation[1]):
+                    iterator = originalLocation[1] - 1
+                    while (iterator > -1):
+                        if (chessBoard[kCol][iterator] and not (iterator == originalLocation[1])):
+                            if (chessBoard[kCol][iterator].get_name() == "rook" or chessBoard[kCol][
+                                iterator].get_name() == "queen") and chessBoard[kCol][iterator].get_color() == "black":
+                                return True
+                            return False
+                        iterator -= 1
+                    return False
+                else:
+                    iterator = originalLocation[1] + 1
+                    while (iterator < 8):
+                        if (chessBoard[kCol][iterator] and not (iterator == originalLocation[1])):
+                            if (chessBoard[kCol][iterator].get_name() == "rook" or chessBoard[kCol][
+                                iterator].get_name() == "queen") and chessBoard[kCol][iterator].get_color() == "black":
+                                return True
+                            return False
+                        iterator += 1
+                    return False
+            elif (abs(kRow - originalLocation[1]) == abs(kCol - originalLocation[0])):
+                return False
+            elif (kRow + kCol == originalLocation[1] + originalLocation[0]):
+                return False
+            else:
+                return False
+    else:
+        return False #also have to change this
+
 
 def updateChessPiece(piece, newLocation):
     chessBoard[piece.get_position()[0]][piece.get_position()[1]] = None
@@ -354,5 +1069,15 @@ while True:
                     (mouse_x - background_image.get_width() // 16,
                      mouse_y - background_image.get_width() // 16))
 
+    if selected_piece:
+        for square in selected_piece.return_legal_moves():
+            circle_surface = pygame.Surface((square_width, square_width), pygame.SRCALPHA)
+            circle_surface.set_alpha(85)
+            if not chessBoard[square[1]][square[0]]:
+                pygame.draw.circle(circle_surface, (75, 75, 75), (square_width / 2, square_width / 2), 13)
+            else:
+                pygame.draw.circle(circle_surface, (75, 75, 75), (square_width / 2, square_width / 2), square_width / 2,
+                                   6)
+            screen.blit(circle_surface, (50 + square[1] * square_width, 50 + square[0] * square_width))
     pygame.display.flip()
     clock.tick(60)
