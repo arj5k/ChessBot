@@ -568,6 +568,36 @@ def is_valid_move(selected_piece, new_i, new_j):
     return any(move == target_pos for move in selected_piece.return_legal_moves())
 
 
+def draw_legal_moves(screen, selected_piece, square_width, side, chessBoard):
+    if not selected_piece:
+        return
+
+    for square in selected_piece.return_legal_moves():
+        # Create transparent surface for the indicator
+        circle_surface = pygame.Surface((square_width, square_width), pygame.SRCALPHA)
+        circle_surface.set_alpha(85)
+        circle_pos = (square_width / 2, square_width / 2)
+
+        # Handle board orientation
+        display_square = square.copy()
+        if not side:
+            temp = display_square[0]
+            display_square[1] = 7 - display_square[1]
+            display_square[0] = 7 - temp
+
+        # Draw different indicators for empty vs capturable squares
+        if not chessBoard[square[0]][square[1]]:
+            # Small filled circle for empty squares
+            pygame.draw.circle(circle_surface, (75, 75, 75), circle_pos, 13)
+        else:
+            # Large hollow circle for capture squares
+            pygame.draw.circle(circle_surface, (75, 75, 75), circle_pos, square_width / 2, 6)
+
+        # Position and draw the indicator
+        screen.blit(circle_surface,
+                    (50 + display_square[1] * square_width,
+                     50 + display_square[0] * square_width))
+
 # Main game loop
 while True:
     for event in pygame.event.get():
@@ -683,24 +713,8 @@ while True:
                     mouse_y - background_image.get_width() // 16))
 
     # Draw legal moves
-    if selected_piece:
-        for square in selected_piece.return_legal_moves():
-            circle_surface = pygame.Surface((square_width, square_width), pygame.SRCALPHA)
-            circle_surface.set_alpha(85)
-            circle_pos = (square_width / 2, square_width / 2)
+    draw_legal_moves(screen, selected_piece, square_width, side, chessBoard)
 
-            if not side:
-                temp = square[0]
-                square[0] = 7 - square[1]
-                square[1] = 7 - temp
-
-            if not chessBoard[square[0]][square[1]]:
-                pygame.draw.circle(circle_surface, (75, 75, 75), circle_pos, 13)
-            else:
-                pygame.draw.circle(circle_surface, (75, 75, 75), circle_pos, square_width/2, 6)
-
-            screen.blit(circle_surface, (50 + square[1] * square_width,
-                                       50 + square[0] * square_width))
 
     pygame.display.flip()
     clock.tick(60)
