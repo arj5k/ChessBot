@@ -1,5 +1,6 @@
 import pygame
 
+
 pygame.init()
 
 screen = pygame.display.set_mode((750, 750))
@@ -994,6 +995,7 @@ while True:
                         if (i != selected_i or j != selected_j):
                             # Move the piece
                             chessBoard[i][j] = selected_piece
+                            updateChessPiece(selected_piece,[i,j])
                             chessBoard[selected_i][selected_j] = None
                         selected_piece = None
                         selected_i = None
@@ -1010,7 +1012,7 @@ while True:
                     # If mouse has moved more than 5 pixels, start dragging
                     if (dx * dx + dy * dy) > 25:  # 5 pixels squared
                         dragging = True
-                        chessBoard[selected_i][selected_j] = None
+                        #chessBoard[selected_i][selected_j] = None
 
         elif event.type == pygame.MOUSEBUTTONUP:
             if dragging:
@@ -1019,10 +1021,10 @@ while True:
                 if board_pos:
                     new_i, new_j = board_pos
                     chessBoard[new_i][new_j] = selected_piece
+                    chessBoard[selected_i][selected_j] = None
                 else:
                     # If dropped outside the board, return piece to original position
                     chessBoard[selected_i][selected_j] = selected_piece
-
                 selected_piece = None
                 selected_i = None
                 selected_j = None
