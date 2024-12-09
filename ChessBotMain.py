@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 import numpy
+import chess.pgn
 
 class NeuralNetwork(nn.Module):
     def __init__(self):
@@ -20,8 +21,8 @@ class NeuralNetwork(nn.Module):
         return logits
 
 model = NeuralNetwork()
-loss_function = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
+loss_function = nn.MSELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 def train(dataloader, model, loss_fn, optimizer):
     size = len(dataloader.dataset)
@@ -36,6 +37,14 @@ def train(dataloader, model, loss_fn, optimizer):
         if batch:
             loss, current = loss.item(), batch * len(X)
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+
+        if batch % 10 == 0:  # Save every 10 batches (adjust as needed)
+                loss, current = loss.item(), batch * len(X)
+                print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+    # Save model weights after each epoch
+    torch.save(model.state_dict(), f"model_epoch_{epoch}.pth")
+    print(f"Model weights saved for epoch {epoch}.")
+
 def test(dataloader, model, loss_fn):
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
@@ -52,3 +61,12 @@ def test(dataloader, model, loss_fn):
 
 
 print(model)
+
+
+# Assuming a DataLoader is defined as `train_dataloader` and `test_dataloader`
+# Replace `train_dataloader` and `test_dataloader` with your actual dataloaders
+epochs = 10
+for epoch in range(1, epochs + 1):
+    print(f"Epoch {epoch}/{epochs}")
+    train(train_dataloader, model, loss_function, optimizer, epoch)  # Pass epoch number
+    test(test_dataloader, model, loss_function)
