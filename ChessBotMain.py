@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 
 from torch.utils.data import DataLoader, Dataset
 
+
+#haven't tested added yet
 class ChessDataset(Dataset):
     def __init__(self, fens, evaluations):
         self.fens = fens
@@ -36,7 +38,7 @@ def encode_board(board):
     return encoded
 
 # Load CSV
-df = pd.read_csv("chessData.csv", skiprows=range(1,2500000), nrows=50000)
+df = pd.read_csv("chessData.csv", skiprows=range(1,250001), nrows=500000)
 
 
 # Extract data
@@ -57,12 +59,12 @@ from sklearn.model_selection import train_test_split
 fens_train, fens_val, evals_train, evals_val = train_test_split(fens, evaluations, test_size=0.2, random_state=42)
 
 # Create the training and validation datasets'''
-train_dataset = ChessDataset(fens, evaluations)
+train_dataset = ChessDataset(fens_train, evals_train)
 val_dataset = ChessDataset(fens_val, evals_val)
 
 # Create DataLoaders for both datasets
 train_dataloader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-val_dataloader = DataLoader(val_dataset, batch_size=64, shuffle=False)
+val_dataloader = DataLoader(val_dataset, batch_size=64, shuffle=True)
 # Encode and Convert to Tensors
 positions = []
 for fen in fens:
@@ -81,9 +83,13 @@ class ChessBot(nn.Module):
         self.flatten = nn.Flatten()
         self.linear_relu_stack = nn.Sequential(
             nn.Linear(12*8*8, 512),
+            nn.BatchNorm1d(512), #added
             nn.ReLU(),
+            nn.Dropout(0.3),
             nn.Linear(512, 512),
+            nn.BatchNorm1d(512),  # added
             nn.ReLU(),
+            nn.Dropout(0.3),
             nn.Linear(512, 1),
         )
 
