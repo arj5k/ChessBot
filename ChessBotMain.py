@@ -36,7 +36,7 @@ def encode_board(board):
     return encoded
 
 # Load CSV
-df = pd.read_csv("chessData.csv", skiprows=range(1,1500000), nrows=500000)
+df = pd.read_csv("chessData.csv", skiprows=range(1,2500000), nrows=50000)
 
 
 # Extract data
@@ -96,13 +96,16 @@ class ChessBot(nn.Module):
 
 def train(dataloader, model, loss_fn, optimizer):
     model.train()
+    running_loss = 0.0
     for X, y in dataloader:
         pred = model(X)
         loss = loss_fn(pred, y.unsqueeze(1))
+        running_loss += loss.item()
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+    return running_loss / len(dataloader)
 
 def test(dataloader, model, loss_fn):
     model.eval()
@@ -131,8 +134,9 @@ val_loss = []
 epochs = 10
 for epoch in range(1, epochs + 1):
     print(f"Epoch {epoch}/{epochs}")
-    train(train_dataloader, model, loss_function, optimizer)
+    epoch_loss = train(train_dataloader, model, loss_function, optimizer)
     test(train_dataloader, model, loss_function)
+    train_loss.append(epoch_loss)
 
 
     # Validation phase
