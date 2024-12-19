@@ -38,7 +38,7 @@ def encode_board(board):
     return encoded
 
 # Load CSV
-df = pd.read_csv("chessData.csv", skiprows=range(1,250001), nrows=500000)
+df = pd.read_csv("chessData.csv", skiprows=range(1,1000001), nrows=10000000)
 
 
 # Extract data
@@ -66,14 +66,16 @@ val_dataset = ChessDataset(fens_val, evals_val)
 train_dataloader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 val_dataloader = DataLoader(val_dataset, batch_size=64, shuffle=True)
 # Encode and Convert to Tensors
-positions = []
-for fen in fens:
-    board = chess.Board(fen)
-    encoded_board = encode_board(board)  # Use previously defined function
-    positions.append(encoded_board)
+# Pre-allocate numpy array with the correct shape
+positions = np.zeros((len(fens), 12, 8, 8), dtype=np.float32)
 
-# Convert to PyTorch tensors
-X = torch.tensor(positions, dtype=torch.float32)
+# Fill the array
+for i, fen in enumerate(fens):
+    board = chess.Board(fen)
+    positions[i] = encode_board(board)
+
+# Convert to PyTorch tensor
+X = torch.from_numpy(positions)
 y = torch.tensor(evaluations, dtype=torch.float32).unsqueeze(1)
 
 
@@ -135,9 +137,6 @@ epochs = 10
 # Track training and validation loss
 train_loss = []
 val_loss = []
-
-#Assuming a DataLoader is defined as train_dataloader and test_dataloader
-epochs = 10
 for epoch in range(1, epochs + 1):
     print(f"Epoch {epoch}/{epochs}")
     epoch_loss = train(train_dataloader, model, loss_function, optimizer)
