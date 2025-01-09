@@ -1,13 +1,44 @@
 from tempfile import tempdir
 import pygame
+import torch
+import chess
 import copy
+import time
+import threading
+print("importing chessbot")
+from ChessBotMain import ChessBot, encode_board
+print('imported')
+def load_model(model_path="chess_ai_model.pt"):
+     print("loading...")
+     model = ChessBot()
+     model.load_state_dict(torch.load(model_path))
+     model.eval()  # Set the model to evaluation mode
+     print("loaded")
+     return model
+
+
+def evaluate_position(fen, model):
+     #Convert the FEN to an encoded board
+     board = chess.Board(fen)
+     encoded_board = encode_board(board)
+
+    # Convert to a PyTorch tensor and add a batch dimension
+     input_tensor = torch.tensor(encoded_board, dtype=torch.float32).unsqueeze(0)
+
+    # Evaluate the position
+     with torch.no_grad():
+         evaluation = model(input_tensor)
+     return evaluation.item()
+
+print("callind model")
+model = load_model("chess_ai_model.pt")
 
 pygame.init()
 
 screen = pygame.display.set_mode((740, 740))
 clock = pygame.time.Clock()
 
-side = False
+side = True
 if side:
     background_image = pygame.image.load("ChessBoard.png")
 else:
@@ -27,15 +58,19 @@ def load_piece_image(color, name):
             background_image.get_width() // 8, background_image.get_height() // 8))
     return PIECE_IMAGES[key]
 
+
 WHITE_TIMELEFT = 600000
 BLACK_TIMELEFT = 600000
 
 PLAYER = {
-    1:"WHITE",
-    2:"BLACK"
+    1:"white",
+    2:"black"
 }
 
 current_player = 1
+
+turnClock = 1
+halfClock = 0
 turn = True
 check = False
 checkmate = False
@@ -836,9 +871,9 @@ def checkChecked(originalLocation, newLocation, isKing, color):
     else:
         return False #also have to change this
 
-def updateChessPiece(piece, newLocation):
-    chessBoard[piece.get_position()[0]][piece.get_position()[1]] = None
-    chessBoard[newLocation[0]][newLocation[1]] = piece
+def updateChessPiece(piece, newLocation, board):
+    board[piece.get_position()[0]][piece.get_position()[1]] = None
+    board[newLocation[0]][newLocation[1]] = piece
     piece.position = newLocation
 
 bPawns = [None] * 8
@@ -883,18 +918,18 @@ wKing = [None] * 1
 bKing[0] = King([0, 4], "black", True, False)
 wKing[0] = King([7, 4], "white", True, False)
 
-for element in bPawns: updateChessPiece(element, element.get_position())
-for element in wPawns: updateChessPiece(element, element.get_position())
-for element in bRooks: updateChessPiece(element, element.get_position())
-for element in wRooks: updateChessPiece(element, element.get_position())
-for element in bNights: updateChessPiece(element, element.get_position())
-for element in wNights: updateChessPiece(element, element.get_position())
-for element in bBishops: updateChessPiece(element, element.get_position())
-for element in wBishops: updateChessPiece(element, element.get_position())
-for element in bQueen: updateChessPiece(element, element.get_position())
-for element in wQueen: updateChessPiece(element, element.get_position())
-for element in bKing: updateChessPiece(element, element.get_position())
-for element in wKing: updateChessPiece(element, element.get_position())
+for element in bPawns: updateChessPiece(element, element.get_position(), chessBoard)
+for element in wPawns: updateChessPiece(element, element.get_position(), chessBoard)
+for element in bRooks: updateChessPiece(element, element.get_position(), chessBoard)
+for element in wRooks: updateChessPiece(element, element.get_position(), chessBoard)
+for element in bNights: updateChessPiece(element, element.get_position(), chessBoard)
+for element in wNights: updateChessPiece(element, element.get_position(), chessBoard)
+for element in bBishops: updateChessPiece(element, element.get_position(), chessBoard)
+for element in wBishops: updateChessPiece(element, element.get_position(), chessBoard)
+for element in bQueen: updateChessPiece(element, element.get_position(), chessBoard)
+for element in wQueen: updateChessPiece(element, element.get_position(), chessBoard)
+for element in bKing: updateChessPiece(element, element.get_position(), chessBoard)
+for element in wKing: updateChessPiece(element, element.get_position(), chessBoard)
 
 # Variables for piece selection and movement
 selected_i = None
@@ -914,6 +949,96 @@ def get_board_position(mouse_pos):
             return ((int(7 - (mouse_pos[1] - 50) // square_width)),
                     (int(7 - ((mouse_pos[0] - 50) // square_width))))
     return None
+def make_fen(board, halfClock, turnClock, current_player):
+    board_string = ""
+    emptys = 0
+    turn_string = "w" if current_player == 1 else "b"
+    castle_string = "-"
+    en_passant = "-"
+    halfmoves = str(halfClock)
+    moves = str(turnClock)
+    for row in board:
+        for game_piece in row:
+            if game_piece != None:
+                if emptys:
+                    board_string += str(emptys)
+                emptys = 0
+                if game_piece.get_color() == "black":
+                    match str(type(game_piece)):
+                        case "<class '__main__.Pawn'>": board_string += "p"
+                        case "<class '__main__.Night'>": board_string += "n"
+                        case "<class '__main__.Bishop'>": board_string += "b"
+                        case "<class '__main__.Rook'>": board_string += "r"
+                        case "<class '__main__.Queen'>": board_string += "q"
+                        case "<class '__main__.King'>": board_string += "k"
+                else:
+                    match str(type(game_piece)):
+                        case "<class '__main__.Pawn'>": board_string += "P"
+                        case "<class '__main__.Night'>": board_string += "N"
+                        case "<class '__main__.Bishop'>": board_string += "B"
+                        case "<class '__main__.Rook'>": board_string += "R"
+                        case "<class '__main__.Queen'>": board_string += "Q"
+                        case "<class '__main__.King'>": board_string += "K"
+            else:
+                emptys+=1
+        if emptys:
+            board_string += str(emptys)
+        emptys = 0
+        if board.index(row) != WIDTH-1:
+            board_string +="/"
+    return board_string+" "+turn_string+" "+castle_string+" "+en_passant+" "+halfmoves+" "+moves
+def copy_piece(piece):
+    if isinstance(piece, Pawn):
+        return Pawn(piece.get_position(), piece.get_color(), piece.can_move_two(), piece.can_be_en_passanted())
+    elif isinstance(piece, Night):
+        return Night(piece.get_position(), piece.get_color())
+    elif isinstance(piece, Bishop):
+        return Bishop(piece.get_position(), piece.get_color())
+    elif isinstance(piece, Queen):
+        return Queen(piece.get_position(), piece.get_color())
+    elif isinstance(piece, Rook):
+        return Rook(piece.get_position(), piece.get_color(), piece.can_castle())
+    elif isinstance(piece, King):
+        return King(piece.get_position(), piece.get_color(), piece.can_castle(), piece.in_check())
+
+def deep_copy_board(board):
+    return [[copy_piece(piece) for piece in row] for row in board]
+def bot_move():
+    global turnClock
+    global halfClock
+    global current_player
+    best_eval = None
+    best_piece = None
+    best_move = None
+    new_clock = turnClock
+    new_hc = halfClock
+
+    for i in range (0, WIDTH):
+        for j in range (0, WIDTH):
+            print("working")
+            if chessBoard[i][j] != None and chessBoard[i][j].get_color() == "black":
+                for square in chessBoard[i][j].return_legal_moves():
+                    print("iterating")
+                    new_move = deep_copy_board(chessBoard)
+                    updateChessPiece(new_move[i][j], square, new_move)
+                    temp_clock = turnClock + 1
+                    temp_hc = halfClock + 1
+                    if isinstance(chessBoard[i][j], Pawn) or chessBoard[square[0]][square[1]] != None:
+                        temp_hc = 0
+                    print(make_fen(new_move, temp_hc, temp_clock, 1))
+                    test_eval = evaluate_position(make_fen(new_move, new_hc, new_clock, 1), model)
+                    if ((best_eval==None) or test_eval<best_eval):
+                        print("found better move")
+                        best_eval = test_eval
+                        best_piece = chessBoard[i][j]
+                        best_move = square
+                        new_clock = temp_clock
+                        new_hc = temp_hc
+    time.sleep(0.5)
+    updateChessPiece(best_piece, best_move, chessBoard)
+    current_player = 1
+    halfClock = new_hc
+    turnClock = new_clock
 
 def draw_timer(screen, white_time, black_time):
     """
@@ -991,7 +1116,7 @@ while True:
                 i, j = board_pos
                 if selected_piece is None:
                     # First click - select piece
-                    if chessBoard[i][j]:
+                    if chessBoard[i][j] and chessBoard[i][j].get_color() == PLAYER[current_player]:
                         selected_piece = chessBoard[i][j]
                         selected_i = i
                         selected_j = j
@@ -999,15 +1124,28 @@ while True:
                 else:
                     # Second click - move piece if it's not a drag operation
                     if not dragging:
-                        if (i != selected_i or j != selected_j):
+                        if (i != selected_i or j != selected_j)  and [i,j] in selected_piece.return_legal_moves():
                             # Move the piece
-                            updateChessPiece(selected_piece, [i,j])
+                            reset_clock = False
+                            if chessBoard[i][j] or isinstance(selected_piece, Pawn):
+                                reset_clock = True
+                            updateChessPiece(selected_piece, [i,j], chessBoard)
                             #add update34h208hfou32hrfgou3ewhgiutehgoiuhgwoiurtghoiuwetgtrw
+                            if current_player == 1:
+                                current_player = 2
+                                halfClock+=1
+                            else:
+                                current_player = 1
+                                turnClock+=1
+                                halfClock+=1
+                            if reset_clock:
+                                halfClock = 0
                         selected_piece = None
                         selected_i = None
                         selected_j = None
                         legal_moves = None
-                        current_player = 1 if current_player == 2 else 2
+
+
 
         elif event.type == pygame.MOUSEMOTION:
             if selected_piece and not dragging:
@@ -1026,14 +1164,18 @@ while True:
                 board_pos = get_board_position(pygame.mouse.get_pos())
                 if board_pos:
                     new_i, new_j = board_pos
-                    updateChessPiece(selected_piece, [new_i, new_j])
-
+                    if([new_i, new_j] in selected_piece.return_legal_moves()):
+                        updateChessPiece(selected_piece, [new_i, new_j], chessBoard)
+                        if current_player == 1:
+                            current_player = 2
+                        else:
+                            current_player = 1
+                            turnClock += 1
                 selected_piece = None
                 selected_i = None
                 selected_j = None
                 dragging = False
                 legal_moves = None
-                current_player = 1 if current_player == 2 else 2
             initial_click_pos = None
 
     # Do logical updates here.
@@ -1055,6 +1197,7 @@ while True:
         BLACK_TIMELEFT -= clock.get_time()
         if BLACK_TIMELEFT < 0:
             BLACK_TIMELEFT = 0
+
 
     draw_timer(screen, WHITE_TIMELEFT, BLACK_TIMELEFT)
 
@@ -1084,16 +1227,23 @@ while True:
         for square in legal_moves:
             circle_surface = pygame.Surface((square_width, square_width), pygame.SRCALPHA)
             circle_surface.set_alpha(85)
-            if not side:
-                temp = square[0]
-                square[0] = square[1]
-                square[1] = temp
-            if not chessBoard[square[0]][square[1]]:
+            sq_copy = []
+            if side:
+                sq_copy.append(square[0])
+                sq_copy.append(square[1])
+            else:
+                sq_copy.append(square[1])
+                sq_copy.append(square[0])
+            if not chessBoard[sq_copy[0]][sq_copy[1]]:
                 pygame.draw.circle(circle_surface, (75, 75, 75), (square_width / 2, square_width / 2), 13)
             else:
                 pygame.draw.circle(circle_surface, (75, 75, 75), (square_width / 2, square_width / 2), square_width / 2,
                                    6)
-            screen.blit(circle_surface, (50 + square[1] * square_width, 50 + square[0] * square_width))
+            screen.blit(circle_surface, (50 + sq_copy[1] * square_width, 50 + sq_copy[0] * square_width))
 
+    if(current_player == 2):
+        t1 = threading.Thread(target=bot_move)
+        t1.start()
+        current_player=1
     pygame.display.flip()
     clock.tick(60)
