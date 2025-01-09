@@ -7,7 +7,7 @@ pygame.init()
 screen = pygame.display.set_mode((740, 740))
 clock = pygame.time.Clock()
 
-side = False
+side = True
 if side:
     background_image = pygame.image.load("ChessBoard.png")
 else:
@@ -36,8 +36,6 @@ PLAYER = {
 }
 
 current_player = 1
-turn = True
-check = False
 checkmate = False
 #add an additional element to the grid that says if a piece attacks it, also to the legal moves or somewhere else that only allows a move to be legal if not in check, also make everything else cooperate, especially update the board array
 
@@ -55,11 +53,12 @@ class Piece:
         return self.color
 
 class Pawn(Piece):
-    def __init__(self, position, color, double_move, en_passantable):
+    def __init__(self, position, color, double_move, en_passantable, promotion):
         super().__init__(position, color)
         self.double_move = double_move
         self.en_passantable = en_passantable
         self.image = load_piece_image(color, self.get_name())
+        self.promotion = promotion
     def get_image(self):
         return self.image
     def get_name(self):
@@ -68,7 +67,15 @@ class Pawn(Piece):
         return self.double_move
     def can_be_en_passanted(self):
         return self.en_passantable
-    def return_legal_moves(self):
+    def update_state(self):
+        if self.double_move:
+            self.double_move = False
+            if (self.position[0] == 3 or self.position[0] == 4):
+                self.en_passantable = True
+        elif self.en_passantable:
+            self.en_passantable = False
+        #add promotion thing here as well
+    def return_legal_moves(self): #enpassant doesnt work also you can take your own piece, also why does it signal you can attack outside without error (this itself isnt a problem but seems almost as if signals an error)
         #if piece in way, puts in check, or out of bounds + (also have to add in the check check after determign everything else possible function) - add in this square as a possibility to be returned - THE WAY YOU WILL CODE THE CheckChecked function does not iterate through every piece, so you will have to add "in_check" boolean at the start of each return_legal_moves function everyttime - add in a seperate part for getting out of check legal moves thing probably, this may mean you have to implement aditional variables (like what is the piece giving check, is it a double check)
         legalMoves = []
         newPosition = copy.deepcopy(self.get_position())
@@ -78,74 +85,73 @@ class Pawn(Piece):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] += 2
                     if (not checkChecked(self.get_position(), newPosition1, False, "black")):
-                        legalMoves.append(newPosition1) #add this to every other part
+                        legalMoves.append(newPosition1 + [0])
             else:
                 if (not (chessBoard[newPosition[0] - 1][newPosition[1]] or chessBoard[newPosition[0]-2][newPosition[1]])):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] -= 2
                     if (not checkChecked(self.get_position(), newPosition1, False, "white")):
-                        legalMoves.append(newPosition1)  # add this to every other part
+                        legalMoves.append(newPosition1 + [0])
+        if (self.get_color() == "black"):#first check to see if last square to promote bro
+            if (not (chessBoard[newPosition[0]+1][newPosition[1]])):
+                newPosition1 = copy.deepcopy(self.get_position())
+                newPosition1[0] += 1
+                if (not checkChecked(self.get_position(), newPosition1, False, "black")):
+                    legalMoves.append(newPosition1 + [0])
+            if (newPosition[1] != 7 and (chessBoard[newPosition[0] + 1][newPosition[1] + 1]) and chessBoard[newPosition[0] + 1][newPosition[1] + 1].get_color() == "white"):
+                newPosition1 = copy.deepcopy(self.get_position())
+                newPosition1[0] += 1
+                newPosition1[1] += 1
+                if (not checkChecked(self.get_position(), newPosition1, False, "black")):
+                    legalMoves.append(newPosition1 + [0])
+            if (newPosition[1] != 0 and (chessBoard[newPosition[0] + 1][newPosition[1] - 1]) and chessBoard[newPosition[0] + 1][newPosition[1] - 1].get_color() == "white"):
+                newPosition1 = copy.deepcopy(self.get_position())
+                newPosition1[0] += 1
+                newPosition1[1] -= 1
+                if (not checkChecked(self.get_position(), newPosition1, False, "black")):
+                    legalMoves.append(newPosition1 + [0])
+            if (newPosition[1] != 7 and (chessBoard[newPosition[0]][newPosition[1] + 1]) and chessBoard[newPosition[0]][newPosition[1] + 1].get_name() == "pawn" and chessBoard[newPosition[0]][newPosition[1] + 1].can_be_en_passanted() and chessBoard[newPosition[0]][newPosition[1] + 1].get_color() == "white"):
+                newPosition1 = copy.deepcopy(self.get_position()) #have to add in an addition check for en passant if that will put you in check
+                newPosition1[0] += 1
+                newPosition1[1] += 1
+                if (not checkChecked(self.get_position(), newPosition1, False, "black")):
+                    legalMoves.append(newPosition1 + [1])
+            if (newPosition[1] != 0 and (chessBoard[newPosition[0]][newPosition[1] - 1]) and chessBoard[newPosition[0]][newPosition[1] - 1].get_name() == "pawn" and chessBoard[newPosition[0]][newPosition[1] - 1].can_be_en_passanted() and chessBoard[newPosition[0]][newPosition[1] - 1].get_color() == "white"):
+                newPosition1 = copy.deepcopy(self.get_position())
+                newPosition1[0] += 1
+                newPosition1[1] -= 1
+                if (not checkChecked(self.get_position(), newPosition1, False, "black")):
+                    legalMoves.append(newPosition1 + [1])
         else:
-            if (self.get_color() == "black"):
-                if (not (chessBoard[newPosition[0]+1][newPosition[1]])):
-                    newPosition1 = copy.deepcopy(self.get_position())
-                    newPosition1[0] += 1
-                    if (not checkChecked(self.get_position(), newPosition1, False, "black")):
-                        legalMoves.append(newPosition1)
-                if (newPosition[0] != 7 and (chessBoard[newPosition[0] + 1][newPosition[1] + 1])):
-                    newPosition1 = copy.deepcopy(self.get_position())
-                    newPosition1[0] += 1
-                    newPosition1[1] += 1
-                    if (not checkChecked(self.get_position(), newPosition1, False, "black")):
-                        legalMoves.append(newPosition1)
-                if (newPosition[0] != 0 and (chessBoard[newPosition[0] - 1][newPosition[1] + 1])):
-                    newPosition1 = copy.deepcopy(self.get_position())
-                    newPosition1[0] -= 1
-                    newPosition1[1] += 1
-                    if (not checkChecked(self.get_position(), newPosition1, False, "black")):
-                        legalMoves.append(newPosition1)
-                if (newPosition[0] != 7 and (chessBoard[newPosition[0] + 1][newPosition[1]]) and chessBoard[newPosition[0] + 1][newPosition[1]].get_name() == "pawn" and chessBoard[newPosition[0] + 1][newPosition[1]].can_be_en_passanted() and chessBoard[newPosition[0] + 1][newPosition[1]].get_color() == "white"):
-                    newPosition1 = copy.deepcopy(self.get_position()) #have to add in an addition check for en passant if that will put you in check
-                    newPosition1[0] += 1
-                    newPosition1[1] += 1
-                    if (not checkChecked(self.get_position(), newPosition1, False, "black")):
-                        legalMoves.append(newPosition1)
-                if (newPosition[0] != 0 and (chessBoard[newPosition[0] - 1][newPosition[1]]) and chessBoard[newPosition[0] - 1][newPosition[1]].get_name() == "pawn" and chessBoard[newPosition[0] - 1][newPosition[1]].can_be_en_passanted() and chessBoard[newPosition[0] - 1][newPosition[1]].get_color() == "white"):
-                    newPosition1 = copy.deepcopy(self.get_position())
-                    newPosition1[0] -= 1
-                    newPosition1[1] += 1
-                    if (not checkChecked(self.get_position(), newPosition1, False, "black")):
-                        legalMoves.append(newPosition1)
-            else:
-                if (not (chessBoard[newPosition[0] - 1][newPosition[1]])):
-                    newPosition1 = copy.deepcopy(self.get_position())
-                    newPosition1[0] -= 1
-                    if (not checkChecked(self.get_position(), newPosition1, False, "white")):
-                        legalMoves.append(newPosition1)
-                if (newPosition[0] != 7 and (chessBoard[newPosition[0] + 1][newPosition[1] - 1])):
-                    newPosition1 = copy.deepcopy(self.get_position())
-                    newPosition1[0] += 1
-                    newPosition1[1] -= 1
-                    if (not checkChecked(self.get_position(), newPosition1, False, "white")):
-                        legalMoves.append(newPosition1)
-                if (newPosition[0] != 0 and (chessBoard[newPosition[0] - 1][newPosition[1] - 1])):
-                    newPosition1 = copy.deepcopy(self.get_position())
-                    newPosition1[0] -= 1
-                    newPosition1[1] -= 1
-                    if (not checkChecked(self.get_position(), newPosition1, False, "white")):
-                        legalMoves.append(newPosition1)
-                if (newPosition[0] != 7 and (chessBoard[newPosition[0] + 1][newPosition[1]]) and chessBoard[newPosition[0] + 1][newPosition[1]].get_name() == "pawn" and chessBoard[newPosition[0] + 1][newPosition[1]].can_be_en_passanted() and chessBoard[newPosition[0] + 1][newPosition[1]].get_color() == "black"):
-                    newPosition1 = copy.deepcopy(self.get_position())
-                    newPosition1[0] += 1
-                    newPosition1[1] -= 1
-                    if (not checkChecked(self.get_position(), newPosition1, False, "white")):
-                        legalMoves.append(newPosition1)
-                if (newPosition[0] != 0 and (chessBoard[newPosition[0] - 1][newPosition[1]]) and chessBoard[newPosition[0] - 1][newPosition[1]].get_name() == "pawn" and chessBoard[newPosition[0] - 1][newPosition[1]].can_be_en_passanted() and chessBoard[newPosition[0] - 1][newPosition[1]].get_color() == "black"):
-                    newPosition1 = copy.deepcopy(self.get_position())
-                    newPosition1[0] -= 1
-                    newPosition1[1] -= 1
-                    if (not checkChecked(self.get_position(), newPosition1, False, "white")):
-                        legalMoves.append(newPosition1)
+            if (not (chessBoard[newPosition[0] - 1][newPosition[1]])):
+                newPosition1 = copy.deepcopy(self.get_position())
+                newPosition1[0] -= 1
+                if (not checkChecked(self.get_position(), newPosition1, False, "white")):
+                    legalMoves.append(newPosition1 + [0])
+            if (newPosition[1] != 7 and (chessBoard[newPosition[0] - 1][newPosition[1] + 1]) and chessBoard[newPosition[0] - 1][newPosition[1] + 1].get_color() == "black"):
+                newPosition1 = copy.deepcopy(self.get_position())
+                newPosition1[0] -= 1
+                newPosition1[1] += 1
+                if (not checkChecked(self.get_position(), newPosition1, False, "white")):
+                    legalMoves.append(newPosition1 + [0])
+            if (newPosition[1] != 0 and (chessBoard[newPosition[0] - 1][newPosition[1] - 1]) and chessBoard[newPosition[0] - 1][newPosition[1] - 1].get_color() == "black"):
+                newPosition1 = copy.deepcopy(self.get_position())
+                newPosition1[0] -= 1
+                newPosition1[1] -= 1
+                if (not checkChecked(self.get_position(), newPosition1, False, "white")):
+                    legalMoves.append(newPosition1 + [0])
+            if (newPosition[1] != 7 and (chessBoard[newPosition[0]][newPosition[1] + 1]) and chessBoard[newPosition[0]][newPosition[1] + 1].get_name() == "pawn" and chessBoard[newPosition[0]][newPosition[1] + 1].can_be_en_passanted() and chessBoard[newPosition[0]][newPosition[1] + 1].get_color() == "black"):
+                newPosition1 = copy.deepcopy(self.get_position())
+                newPosition1[0] -= 1
+                newPosition1[1] += 1
+                if (not checkChecked(self.get_position(), newPosition1, False, "white")):
+                    legalMoves.append(newPosition1 + [1])
+            if (newPosition[1] != 0 and (chessBoard[newPosition[0]][newPosition[1] - 1]) and chessBoard[newPosition[0]][newPosition[1] - 1].get_name() == "pawn" and chessBoard[newPosition[0]][newPosition[1] - 1].can_be_en_passanted() and chessBoard[newPosition[0]][newPosition[1] - 1].get_color() == "black"):
+                newPosition1 = copy.deepcopy(self.get_position())
+                newPosition1[0] -= 1
+                newPosition1[1] -= 1
+                if (not checkChecked(self.get_position(), newPosition1, False, "white")):
+                    legalMoves.append(newPosition1 + [1])
         return legalMoves
 
 class Night(Piece):
@@ -168,26 +174,26 @@ class Night(Piece):
                     newPosition1[0] -= 1
                     newPosition1[1] -= 2
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 elif (not chessBoard[horizontal - 1][vertical - 2]):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] -= 1
                     newPosition1[1] -= 2
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
             if (horizontal < 7):
                 if (chessBoard[horizontal + 1][vertical - 2] and not (chessBoard[horizontal + 1][vertical - 2].get_color() == chessBoard[horizontal][vertical].get_color())):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] += 1
                     newPosition1[1] -= 2
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 elif (not chessBoard[horizontal + 1][vertical - 2]):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] += 1
                     newPosition1[1] -= 2
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
         if (vertical < 6):
             if (horizontal > 0):
                 if (chessBoard[horizontal - 1][vertical + 2] and not (chessBoard[horizontal - 1][vertical + 2].get_color() == chessBoard[horizontal][vertical].get_color())):
@@ -195,26 +201,26 @@ class Night(Piece):
                     newPosition1[0] -= 1
                     newPosition1[1] += 2
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 elif (not chessBoard[horizontal - 1][vertical + 2]):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] -= 1
                     newPosition1[1] += 2
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
             if (horizontal < 7):
                 if (chessBoard[horizontal + 1][vertical + 2] and not (chessBoard[horizontal + 1][vertical + 2].get_color() == chessBoard[horizontal][vertical].get_color())):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] += 1
                     newPosition1[1] += 2
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 elif (not chessBoard[horizontal + 1][vertical + 2]):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] += 1
                     newPosition1[1] += 2
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
         if (horizontal > 1):
             if (vertical > 0):
                 if (chessBoard[horizontal - 2][vertical - 1] and not (chessBoard[horizontal - 2][vertical - 1].get_color() == chessBoard[horizontal][vertical].get_color())):
@@ -222,26 +228,26 @@ class Night(Piece):
                     newPosition1[0] -= 2
                     newPosition1[1] -= 1
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 elif (not chessBoard[horizontal - 2][vertical - 1]):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] -= 2
                     newPosition1[1] -= 1
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
             if (vertical < 7):
                 if (chessBoard[horizontal - 2][vertical + 1] and not (chessBoard[horizontal - 2][vertical + 1].get_color() == chessBoard[horizontal][vertical].get_color())):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] -= 2
                     newPosition1[1] += 1
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 elif (not chessBoard[horizontal - 2][vertical + 1]):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] -= 2
                     newPosition1[1] += 1
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
         if (horizontal < 6):
             if (vertical > 0):
                 if (chessBoard[horizontal + 2][vertical - 1] and not (chessBoard[horizontal + 2][vertical - 1].get_color() == chessBoard[horizontal][vertical].get_color())):
@@ -249,26 +255,26 @@ class Night(Piece):
                     newPosition1[0] += 2
                     newPosition1[1] -= 1
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 elif (not chessBoard[horizontal + 2][vertical - 1]):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] += 2
                     newPosition1[1] -= 1
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
             if (vertical < 7):
                 if (chessBoard[horizontal + 2][vertical + 1] and not (chessBoard[horizontal + 2][vertical + 1].get_color() == chessBoard[horizontal][vertical].get_color())):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] += 2
                     newPosition1[1] += 1
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 elif (not chessBoard[horizontal + 2][vertical + 1]):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] += 2
                     newPosition1[1] += 1
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
         return legalMoves
 
 class Bishop(Piece):
@@ -290,7 +296,7 @@ class Bishop(Piece):
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
                 vertical -= 1
                 horizontal -= 1
             else:
@@ -299,7 +305,7 @@ class Bishop(Piece):
                     newPosition1[0] = horizontal
                     newPosition1[1] = vertical
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 vertical = -100
         vertical = newPosition[1] + 1
         horizontal = newPosition[0] - 1
@@ -309,7 +315,7 @@ class Bishop(Piece):
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
                 vertical += 1
                 horizontal -= 1
             else:
@@ -318,7 +324,7 @@ class Bishop(Piece):
                     newPosition1[0] = horizontal
                     newPosition1[1] = vertical
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 horizontal = -100
         vertical = newPosition[1] - 1
         horizontal = newPosition[0] + 1
@@ -328,7 +334,7 @@ class Bishop(Piece):
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
                 vertical -= 1
                 horizontal += 1
             else:
@@ -337,7 +343,7 @@ class Bishop(Piece):
                     newPosition1[0] = horizontal
                     newPosition1[1] = vertical
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 vertical = -100
         vertical = newPosition[1] + 1
         horizontal = newPosition[0] + 1
@@ -347,7 +353,7 @@ class Bishop(Piece):
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
                 vertical += 1
                 horizontal += 1
             else:
@@ -356,7 +362,7 @@ class Bishop(Piece):
                     newPosition1[0] = horizontal
                     newPosition1[1] = vertical
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 horizontal = 100
         return legalMoves
 
@@ -371,6 +377,8 @@ class Rook(Piece):
         return "rook"
     def can_castle(self):
         return self.castle
+    def update_state(self):
+        if self.castle: self.castle = False
     def return_legal_moves(self):
         legalMoves = []
         newPosition = copy.deepcopy(self.get_position())
@@ -382,7 +390,7 @@ class Rook(Piece):
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
                 vertical -= 1
             else:
                 if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
@@ -390,7 +398,7 @@ class Rook(Piece):
                     newPosition1[0] = horizontal
                     newPosition1[1] = vertical
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 vertical = -100
         vertical = newPosition[1] + 1
         while (vertical < 8):
@@ -399,7 +407,7 @@ class Rook(Piece):
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
                 vertical += 1
             else:
                 if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
@@ -407,7 +415,7 @@ class Rook(Piece):
                     newPosition1[0] = horizontal
                     newPosition1[1] = vertical
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 vertical = 100
         vertical = newPosition[1]
         horizontal = newPosition[0] - 1
@@ -417,7 +425,7 @@ class Rook(Piece):
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
                 horizontal -= 1
             else:
                 if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
@@ -425,7 +433,7 @@ class Rook(Piece):
                     newPosition1[0] = horizontal
                     newPosition1[1] = vertical
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 horizontal = -100
         horizontal = newPosition[0] + 1
         while (horizontal < 8):
@@ -434,7 +442,7 @@ class Rook(Piece):
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
                 horizontal += 1
             else:
                 if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
@@ -442,7 +450,7 @@ class Rook(Piece):
                     newPosition1[0] = horizontal
                     newPosition1[1] = vertical
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 horizontal = 100
         return legalMoves
 
@@ -465,7 +473,7 @@ class Queen(Piece):
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
                 vertical -= 1
                 horizontal -= 1
             else:
@@ -474,7 +482,7 @@ class Queen(Piece):
                     newPosition1[0] = horizontal
                     newPosition1[1] = vertical
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 vertical = -100
         vertical = newPosition[1] + 1
         horizontal = newPosition[0] - 1
@@ -484,7 +492,7 @@ class Queen(Piece):
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
                 vertical += 1
                 horizontal -= 1
             else:
@@ -493,7 +501,7 @@ class Queen(Piece):
                     newPosition1[0] = horizontal
                     newPosition1[1] = vertical
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 horizontal = -100
         vertical = newPosition[1] - 1
         horizontal = newPosition[0] + 1
@@ -503,7 +511,7 @@ class Queen(Piece):
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
                 vertical -= 1
                 horizontal += 1
             else:
@@ -512,7 +520,7 @@ class Queen(Piece):
                     newPosition1[0] = horizontal
                     newPosition1[1] = vertical
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 vertical = -100
         vertical = newPosition[1] + 1
         horizontal = newPosition[0] + 1
@@ -522,7 +530,7 @@ class Queen(Piece):
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
                 vertical += 1
                 horizontal += 1
             else:
@@ -531,7 +539,7 @@ class Queen(Piece):
                     newPosition1[0] = horizontal
                     newPosition1[1] = vertical
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 horizontal = 100
 
         vertical = newPosition[1] - 1
@@ -542,7 +550,7 @@ class Queen(Piece):
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
                 vertical -= 1
             else:
                 if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
@@ -550,7 +558,7 @@ class Queen(Piece):
                     newPosition1[0] = horizontal
                     newPosition1[1] = vertical
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 vertical = -100
         vertical = newPosition[1] + 1
         while (vertical < 8):
@@ -559,7 +567,7 @@ class Queen(Piece):
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
                 vertical += 1
             else:
                 if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
@@ -567,7 +575,7 @@ class Queen(Piece):
                     newPosition1[0] = horizontal
                     newPosition1[1] = vertical
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 vertical = 100
         vertical = newPosition[1]
         horizontal = newPosition[0] - 1
@@ -577,7 +585,7 @@ class Queen(Piece):
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
                 horizontal -= 1
             else:
                 if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
@@ -585,7 +593,7 @@ class Queen(Piece):
                     newPosition1[0] = horizontal
                     newPosition1[1] = vertical
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 horizontal = -100
         horizontal = newPosition[0] + 1
         while (horizontal < 8):
@@ -594,7 +602,7 @@ class Queen(Piece):
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
                 horizontal += 1
             else:
                 if (not (chessBoard[horizontal][vertical].get_color() == self.get_color())):
@@ -602,15 +610,14 @@ class Queen(Piece):
                     newPosition1[0] = horizontal
                     newPosition1[1] = vertical
                     if (not checkChecked(self.get_position(), newPosition1, False, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 horizontal = 100
         return legalMoves
 
 class King(Piece):
-    def __init__(self, position, color, castle, check):
+    def __init__(self, position, color, castle):
         super().__init__(position, color)
         self.castle = castle
-        self.check = check
         self.image = load_piece_image(color, self.get_name())
     def get_image(self):
         return self.image
@@ -618,8 +625,8 @@ class King(Piece):
         return "king"
     def can_castle(self):
         return self.castle
-    def in_check(self):
-        return self.check
+    def update_state(self):
+        if self.castle: self.castle = False
     def return_legal_moves(self):
         legalMoves = []
         newPosition = copy.deepcopy(self.get_position())
@@ -632,38 +639,38 @@ class King(Piece):
                     newPosition1[0] = horizontal - 1
                     newPosition1[1] = vertical - 1
                     if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 elif (not chessBoard[horizontal - 1][vertical - 1]):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] = horizontal - 1
                     newPosition1[1] = vertical - 1
                     if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
             if (horizontal < 7):
                 if (chessBoard[horizontal + 1][vertical - 1] and not (chessBoard[horizontal + 1][vertical - 1].get_color() == chessBoard[horizontal][vertical].get_color())):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] = horizontal + 1
                     newPosition1[1] = vertical - 1
                     if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 elif (not chessBoard[horizontal + 1][vertical - 1]):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] = horizontal + 1
                     newPosition1[1] = vertical - 1
                     if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
             if (chessBoard[horizontal][vertical - 1] and not (chessBoard[horizontal][vertical - 1].get_color() == chessBoard[horizontal][vertical].get_color())):
                 newPosition1 = copy.deepcopy(self.get_position())
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical - 1
                 if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
             elif (not chessBoard[horizontal][vertical - 1]):
                 newPosition1 = copy.deepcopy(self.get_position())
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical - 1
                 if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
         if (vertical < 7):
             if (horizontal > 0):
                 if (chessBoard[horizontal - 1][vertical + 1] and not (chessBoard[horizontal - 1][vertical + 1].get_color() == chessBoard[horizontal][vertical].get_color())):
@@ -671,181 +678,125 @@ class King(Piece):
                     newPosition1[0] = horizontal - 1
                     newPosition1[1] = vertical + 1
                     if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 elif (not chessBoard[horizontal - 1][vertical + 1]):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] = horizontal - 1
                     newPosition1[1] = vertical + 1
                     if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
             if (horizontal < 7):
                 if (chessBoard[horizontal + 1][vertical + 1] and not (chessBoard[horizontal + 1][vertical + 1].get_color() == chessBoard[horizontal][vertical].get_color())):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] = horizontal + 1
                     newPosition1[1] = vertical + 1
                     if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
                 elif (not chessBoard[horizontal + 1][vertical + 1]):
                     newPosition1 = copy.deepcopy(self.get_position())
                     newPosition1[0] = horizontal + 1
                     newPosition1[1] = vertical + 1
                     if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
-                        legalMoves.append(newPosition1)
+                        legalMoves.append(newPosition1 + [0])
             if (chessBoard[horizontal][vertical + 1] and not (chessBoard[horizontal][vertical + 1].get_color() == chessBoard[horizontal][vertical].get_color())):
                 newPosition1 = copy.deepcopy(self.get_position())
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical + 1
                 if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
             elif (not chessBoard[horizontal][vertical + 1]):
                 newPosition1 = copy.deepcopy(self.get_position())
                 newPosition1[0] = horizontal
                 newPosition1[1] = vertical + 1
                 if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
         if (horizontal > 0):
             if (chessBoard[horizontal - 1][vertical] and not (chessBoard[horizontal - 1][vertical].get_color() == chessBoard[horizontal][vertical].get_color())):
                 newPosition1 = copy.deepcopy(self.get_position())
                 newPosition1[0] = horizontal - 1
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
             elif (not chessBoard[horizontal - 1][vertical]):
                 newPosition1 = copy.deepcopy(self.get_position())
                 newPosition1[0] = horizontal - 1
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
         if (horizontal < 7):
             if (chessBoard[horizontal + 1][vertical] and not (chessBoard[horizontal + 1][vertical].get_color() == chessBoard[horizontal][vertical].get_color())):
                 newPosition1 = copy.deepcopy(self.get_position())
                 newPosition1[0] = horizontal + 1
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
             elif (not chessBoard[horizontal + 1][vertical]):
                 newPosition1 = copy.deepcopy(self.get_position())
                 newPosition1[0] = horizontal + 1
                 newPosition1[1] = vertical
                 if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
-                    legalMoves.append(newPosition1)
+                    legalMoves.append(newPosition1 + [0])
+        if self.castle:
+            if (chessBoard[self.get_position()[0]][0] and chessBoard[self.get_position()[0]][0].get_name() == "rook" and chessBoard[self.get_position()[0]][0].can_castle()):
+                if (not chessBoard[self.get_position()[0]][1] and not chessBoard[self.get_position()[0]][2] and not chessBoard[self.get_position()[0]][3]):
+                    newPosition1 = copy.deepcopy(self.get_position())
+                    newPosition1[0] = self.get_position()[0]
+                    newPosition1[1] = 2
+                    if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                        legalMoves.append(newPosition1 + [2])
+            if (chessBoard[self.get_position()[0]][7] and chessBoard[self.get_position()[0]][7].get_name() == "rook" and chessBoard[self.get_position()[0]][7].can_castle()):
+                if (not chessBoard[self.get_position()[0]][6] and not chessBoard[self.get_position()[0]][5]):
+                    newPosition1 = copy.deepcopy(self.get_position())
+                    newPosition1[0] = self.get_position()[0]
+                    newPosition1[1] = 6
+                    if (not checkChecked(self.get_position(), newPosition1, True, self.get_color())):
+                        legalMoves.append(newPosition1 + [3])
         return legalMoves
 
-def checkChecked(originalLocation, newLocation, isKing, color):
-    #have to add in thing if it moves in the same direction so still blocks the check
-    #severrely update this to catch further condiitons(en passant?)
-    if (not isKing):
-        if (color == "black"):
-            kRow = bKing[0].get_position()[1]
-            kCol = bKing[0].get_position()[0]
-            if (kRow == originalLocation[1]):
-                if (kCol < originalLocation[0]):
-                    iterator = originalLocation[0] - 1
-                    while (iterator > -1):
-                        if (chessBoard[iterator][kRow] and not (iterator == originalLocation[0])):
-                            if (chessBoard[iterator][kRow].get_name() == "rook" or chessBoard[iterator][kRow].get_name() == "queen") and chessBoard[iterator][kRow].get_color() == "white":
-                                return True
-                            return False
-                        iterator -= 1
-                    return False
-                else:
-                    iterator = originalLocation[0] + 1
-                    while (iterator < 8):
-                        if (chessBoard[iterator][kRow] and not (iterator == originalLocation[0])):
-                            if (chessBoard[iterator][kRow].get_name() == "rook" or chessBoard[iterator][kRow].get_name() == "queen") and chessBoard[iterator][kRow].get_color() == "white":
-                                return True
-                            return False
-                        iterator += 1
-                    return False
-            elif (kCol == originalLocation[0]):
-                if (kRow < originalLocation[1]):
-                    iterator = originalLocation[1] - 1
-                    while (iterator > -1):
-                        if (chessBoard[kCol][iterator] and not (iterator == originalLocation[1])):
-                            if (chessBoard[kCol][iterator].get_name() == "rook" or chessBoard[kCol][iterator].get_name() == "queen") and chessBoard[kCol][iterator].get_color() == "white":
-                                return True
-                            return False
-                        iterator -= 1
-                    return False
-                else:
-                    iterator = originalLocation[1] + 1
-                    while (iterator < 8):
-                        if (chessBoard[kCol][iterator] and not (iterator == originalLocation[1])):
-                            if (chessBoard[kCol][iterator].get_name() == "rook" or chessBoard[kCol][iterator].get_name() == "queen") and chessBoard[kCol][iterator].get_color() == "white":
-                                return True
-                            return False
-                        iterator += 1
-                    return False
-            elif (abs(kRow - originalLocation[1]) == abs(kCol - originalLocation[0])):
-                return False
-            elif (kRow + kCol == originalLocation[1] + originalLocation[0]):
-                return False
-            else:
-                return False
-        else:
-            kRow = wKing[0].get_position()[1]
-            kCol = wKing[0].get_position()[0]
-            if (kRow == originalLocation[1]):
-                if (kCol < originalLocation[0]):
-                    iterator = originalLocation[0] - 1
-                    while (iterator > -1):
-                        if (chessBoard[iterator][kRow] and not (iterator == originalLocation[0])):
-                            if (chessBoard[iterator][kRow].get_name() == "rook" or chessBoard[iterator][
-                                kRow].get_name() == "queen") and chessBoard[iterator][kRow].get_color() == "black":
-                                return True
-                            return False
-                        iterator -= 1
-                    return False
-                else:
-                    iterator = originalLocation[0] + 1
-                    while (iterator < 8):
-                        if (chessBoard[iterator][kRow] and not (iterator == originalLocation[0])):
-                            if (chessBoard[iterator][kRow].get_name() == "rook" or chessBoard[iterator][
-                                kRow].get_name() == "queen") and chessBoard[iterator][kRow].get_color() == "black":
-                                return True
-                            return False
-                        iterator += 1
-                    return False
-            elif (kCol == originalLocation[0]):
-                if (kRow < originalLocation[1]):
-                    iterator = originalLocation[1] - 1
-                    while (iterator > -1):
-                        if (chessBoard[kCol][iterator] and not (iterator == originalLocation[1])):
-                            if (chessBoard[kCol][iterator].get_name() == "rook" or chessBoard[kCol][
-                                iterator].get_name() == "queen") and chessBoard[kCol][iterator].get_color() == "black":
-                                return True
-                            return False
-                        iterator -= 1
-                    return False
-                else:
-                    iterator = originalLocation[1] + 1
-                    while (iterator < 8):
-                        if (chessBoard[kCol][iterator] and not (iterator == originalLocation[1])):
-                            if (chessBoard[kCol][iterator].get_name() == "rook" or chessBoard[kCol][
-                                iterator].get_name() == "queen") and chessBoard[kCol][iterator].get_color() == "black":
-                                return True
-                            return False
-                        iterator += 1
-                    return False
-            elif (abs(kRow - originalLocation[1]) == abs(kCol - originalLocation[0])):
-                return False
-            elif (kRow + kCol == originalLocation[1] + originalLocation[0]):
-                return False
-            else:
-                return False
-    else:
-        return False #also have to change this
+def checkChecked(originalLocation, newLocation, color, move_data=None):
+    # #simulate new board
+    # newBoard = copy.deepcopy(chessBoard)
+    # newBoard[newLocation[0]][newLocation[1]] = newBoard[originalLocation[0]][originalLocation[1]] #check to see if this works (referecnes and stuff)
+    # newBoard[originalLocation[0]][originalLocation[1]] = None
+    # if not (move_data == None) and not (move_data[0] == 0):
+    #     if (move_data[0] == 1):
+    #         if color == "white":
+    #             newBoard[newLocation[0] + 1][newLocation[1]] = None
+    #         else:
+    #             newBoard[newLocation[0] - 1][newLocation[1]] = None
+    #     elif (move_data[0] == 2):
+    #         #special stuff here (castle through check)
+    #     elif (move_data[0] == 3):
+    #         #special stuff here, also WONT have to add an extra movedata here for promotion because this doesnt affect checks and stuff
+    # if color == "white":
+    #     wKing
+    # else:
+    return False
 
-def updateChessPiece(piece, newLocation):
+
+
+def updateChessPiece(piece, newLocation, updating=False, move_data=None):
     chessBoard[piece.get_position()[0]][piece.get_position()[1]] = None
     chessBoard[newLocation[0]][newLocation[1]] = piece
     piece.position = newLocation
+    if (updating and (piece.get_name() == "pawn" or piece.get_name() == "rook" or piece.get_name() == "king")):
+        piece.update_state()
+        if not (move_data == None) and not (move_data[0] == 0):
+            if (move_data[0] == 1):
+                if piece.get_color() == "white":
+                    chessBoard[piece.get_position()[0] + 1][piece.get_position()[1]] = None
+                else:
+                    chessBoard[piece.get_position()[0] - 1][piece.get_position()[1]] = None
+            elif (move_data[0] == 2):
+                updateChessPiece(chessBoard[piece.get_position()[0]][0], [piece.get_position()[0], 3], True)
+            elif (move_data[0] == 3):
+                updateChessPiece(chessBoard[piece.get_position()[0]][7], [piece.get_position()[0], 5], True)
 
 bPawns = [None] * 8
 wPawns = [None] * 8
 for z in range(WIDTH):
-    bPawns[z] = Pawn([1, z], "black", True, False)
-    wPawns[z] = Pawn([6, z], "white", True, False)
+    bPawns[z] = Pawn([1, z], "black", True, False, False)
+    wPawns[z] = Pawn([6, z], "white", True, False, False)
 
 # Place rooks
 bRooks = [None] * 2
@@ -880,8 +831,8 @@ wQueen[0] = Queen([7, 3], "white")
 # Place kings
 bKing = [None] * 1
 wKing = [None] * 1
-bKing[0] = King([0, 4], "black", True, False)
-wKing[0] = King([7, 4], "white", True, False)
+bKing[0] = King([0, 4], "black", True)
+wKing[0] = King([7, 4], "white", True)
 
 for element in bPawns: updateChessPiece(element, element.get_position())
 for element in wPawns: updateChessPiece(element, element.get_position())
@@ -903,17 +854,18 @@ selected_piece = None
 dragging = False
 initial_click_pos = None
 legal_moves = None
+moves_data = None
 
 def get_board_position(mouse_pos):
     """Convert mouse position to board indices"""
-    if 50 <= mouse_pos[0] <= 700 and 50 <= mouse_pos[1] <= 700:
+    if 50 <= mouse_pos[0] < 690 and 50 <= mouse_pos[1] < 690:
         if side:
             return (int((mouse_pos[1] - 50) // square_width),
                     int((mouse_pos[0] - 50) // square_width))
         else:
             return ((int(7 - (mouse_pos[1] - 50) // square_width)),
                     (int(7 - ((mouse_pos[0] - 50) // square_width))))
-    return None
+    return [-1,-1]
 
 def draw_timer(screen, white_time, black_time):
     """
@@ -986,7 +938,9 @@ while True:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             initial_click_pos = pygame.mouse.get_pos()
             board_pos = get_board_position(initial_click_pos)
-
+            if board_pos == [-1, -1]:
+                if not (selected_piece and not dragging):
+                    board_pos = None
             if board_pos:
                 i, j = board_pos
                 if selected_piece is None:
@@ -995,19 +949,53 @@ while True:
                         selected_piece = chessBoard[i][j]
                         selected_i = i
                         selected_j = j
-                        legal_moves = selected_piece.return_legal_moves()
+                        if (selected_piece.get_color() == "white" and current_player == 1) or (selected_piece.get_color() == "black" and current_player == 2):
+                            legal_moves = selected_piece.return_legal_moves()
+                            first_two = [point[:2] for point in legal_moves]  # Extracts the first two elements
+                            last_one = [point[2:] for point in legal_moves]  # Extracts the last element as a sublist
+                            legal_moves = first_two
+                            moves_data = last_one
+                        else:
+                            legal_moves = []
+                            moves_data = []
+
                 else:
                     # Second click - move piece if it's not a drag operation
                     if not dragging:
+                        inefficientVariable = True
                         if (i != selected_i or j != selected_j):
                             # Move the piece
-                            updateChessPiece(selected_piece, [i,j])
-                            #add update34h208hfou32hrfgou3ewhgiutehgoiuhgwoiurtghoiuwetgtrw
-                        selected_piece = None
-                        selected_i = None
-                        selected_j = None
-                        legal_moves = None
-                        current_player = 1 if current_player == 2 else 2
+                            if [i,j] in legal_moves:
+                                current_player = 1 if current_player == 2 else 2
+                                if current_player == 2:
+                                    for pwn in wPawns:
+                                        if pwn.can_be_en_passanted():
+                                            pwn.update_state()
+                                else:
+                                    for pwn in bPawns:
+                                        if pwn.can_be_en_passanted():
+                                            pwn.update_state()
+                                updateChessPiece(selected_piece, [i, j], True, moves_data[legal_moves.index([i,j])])
+                            elif (not i == -1) and chessBoard[i][j]:
+                                inefficientVariable = False
+                                selected_piece = chessBoard[i][j]
+                                selected_i = i
+                                selected_j = j
+                                if (selected_piece.get_color() == "white" and current_player == 1) or (selected_piece.get_color() == "black" and current_player == 2):
+                                    legal_moves = selected_piece.return_legal_moves()
+                                    first_two = [point[:2] for point in legal_moves]  # Extracts the first two elements
+                                    last_one = [point[2:] for point in legal_moves]  # Extracts the last element as a sublist
+                                    legal_moves = first_two
+                                    moves_data = last_one
+                                else:
+                                    legal_moves = []
+                                    moves_data = []
+                        if (inefficientVariable):
+                            selected_piece = None
+                            selected_i = None
+                            selected_j = None
+                            legal_moves = None
+                            moves_data = None
 
         elif event.type == pygame.MOUSEMOTION:
             if selected_piece and not dragging:
@@ -1026,14 +1014,23 @@ while True:
                 board_pos = get_board_position(pygame.mouse.get_pos())
                 if board_pos:
                     new_i, new_j = board_pos
-                    updateChessPiece(selected_piece, [new_i, new_j])
-
+                    if [new_i, new_j] in legal_moves:
+                        current_player = 1 if current_player == 2 else 2
+                        if current_player == 2:
+                            for pwn in wPawns:
+                                if pwn.can_be_en_passanted():
+                                    pwn.update_state()
+                        else:
+                            for pwn in bPawns:
+                                if pwn.can_be_en_passanted():
+                                    pwn.update_state()
+                        updateChessPiece(selected_piece, [new_i, new_j], True, moves_data[legal_moves.index([new_i,new_j])])
                 selected_piece = None
                 selected_i = None
                 selected_j = None
                 dragging = False
                 legal_moves = None
-                current_player = 1 if current_player == 2 else 2
+                moves_data = None
             initial_click_pos = None
 
     # Do logical updates here.
