@@ -3,7 +3,7 @@ import torch
 import chess
 import copy
 import math
-#things to work on: also when editing evaluation must cap at 100000 based on this code
+
 pygame.init()
 
 screen = pygame.display.set_mode((740, 740))
